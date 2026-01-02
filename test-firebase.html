@@ -61,6 +61,8 @@
             <button class="btn" onclick="testConnection()">Test Firebase Connection</button>
             <button class="btn" onclick="testDataLoading()">Test Data Loading</button>
             <button class="btn" onclick="createDemoData()">Create Demo Data</button>
+            <button class="btn" onclick="testDashboardAccess()">Test Dashboard Access</button>
+            <button class="btn" onclick="testPostJobAccess()">Test Post Job Access</button>
             <button class="btn" onclick="clearLog()">Clear Log</button>
         </div>
         
@@ -68,6 +70,7 @@
     </div>
 
     <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
     <script>
         function log(message, type = 'info') {
             const logElement = document.getElementById('log');
@@ -152,6 +155,92 @@
                 
                 // Test loading after creation
                 setTimeout(testDataLoading, 2000);
+                
+            } catch (error) {
+                log(`ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        async function testPostJobAccess() {
+            log('Testing post job access...', 'info');
+            
+            try {
+                // Wait for talentSync to be available
+                if (typeof talentSync === 'undefined') {
+                    log('ERROR: talentSync not available', 'error');
+                    return;
+                }
+                
+                // Test current user
+                log(`Current user: ${talentSync.currentUser ? 'FOUND' : 'NOT FOUND'}`, talentSync.currentUser ? 'success' : 'error');
+                
+                if (talentSync.currentUser) {
+                    log(`User name: ${talentSync.currentUser.fullName}`, 'success');
+                    log(`User role: ${talentSync.currentUser.role}`, 'success');
+                    
+                    // Check if user can post jobs
+                    if (talentSync.currentUser.role === 'client') {
+                        log('User is a CLIENT - can post jobs', 'success');
+                        log('Post job page should be accessible', 'success');
+                        log('You can try navigating to post-job.html', 'info');
+                    } else if (talentSync.currentUser.role === 'freelancer') {
+                        log('User is a FREELANCER - cannot post jobs', 'info');
+                        log('Post job page will redirect to dashboard', 'info');
+                    } else {
+                        log(`Unknown user role: ${talentSync.currentUser.role}`, 'error');
+                    }
+                } else {
+                    log('Post job page will redirect to login', 'error');
+                    log('Please log in first', 'info');
+                }
+                
+            } catch (error) {
+                log(`ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDashboardAccess() {
+            log('Testing dashboard access...', 'info');
+            
+            try {
+                // Wait for talentSync to be available
+                if (typeof talentSync === 'undefined') {
+                    log('ERROR: talentSync not available', 'error');
+                    return;
+                }
+                
+                // Test current user
+                log(`Current user: ${talentSync.currentUser ? 'FOUND' : 'NOT FOUND'}`, talentSync.currentUser ? 'success' : 'error');
+                
+                if (talentSync.currentUser) {
+                    log(`User name: ${talentSync.currentUser.fullName}`, 'success');
+                    log(`User role: ${talentSync.currentUser.role}`, 'success');
+                    log(`User ID: ${talentSync.currentUser.id || talentSync.currentUser.uid}`, 'success');
+                }
+                
+                // Test Firebase auth
+                if (firebaseService && firebaseService.auth) {
+                    const firebaseUser = firebaseService.auth.currentUser;
+                    log(`Firebase user: ${firebaseUser ? 'FOUND' : 'NOT FOUND'}`, firebaseUser ? 'success' : 'info');
+                    if (firebaseUser) {
+                        log(`Firebase UID: ${firebaseUser.uid}`, 'success');
+                    }
+                }
+                
+                // Test storage
+                const sessionUser = sessionStorage.getItem('currentUser');
+                const localUser = localStorage.getItem('currentUser');
+                log(`Session storage: ${sessionUser ? 'HAS USER' : 'EMPTY'}`, sessionUser ? 'success' : 'info');
+                log(`Local storage: ${localUser ? 'HAS USER' : 'EMPTY'}`, localUser ? 'success' : 'info');
+                
+                // Test dashboard access
+                if (talentSync.currentUser) {
+                    log('Dashboard should be accessible', 'success');
+                    log('You can try navigating to dashboard.html', 'info');
+                } else {
+                    log('Dashboard will redirect to login', 'error');
+                    log('Please log in first', 'info');
+                }
                 
             } catch (error) {
                 log(`ERROR: ${error.message}`, 'error');

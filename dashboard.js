@@ -6,24 +6,95 @@ class Dashboard {
     }
 
     init() {
-        // Wait for talentSync to be initialized
+        // Wait for talentSync to be initialized and user session to be loaded
         if (typeof talentSync !== 'undefined') {
-            this.checkUserAuth();
-            this.setupNavigation();
-            this.populateUserInfo();
-            this.setupSidebar();
-            this.loadDashboardData();
-            this.setupEventListeners();
+            // Wait for user session to be loaded (especially important for Firebase auth)
+            this.waitForUserAuth();
         } else {
             // Retry after a short delay
             setTimeout(() => this.init(), 100);
         }
     }
 
+    async waitForUserAuth() {
+        console.log('Dashboard: Waiting for user authentication...');
+        
+        // Also listen for the userLoaded event
+        const userLoadedPromise = new Promise((resolve) => {
+            const handleUserLoaded = (event) => {
+                console.log('Dashboard: User loaded event received');
+                window.removeEventListener('userLoaded', handleUserLoaded);
+                resolve(true);
+            };
+            window.addEventListener('userLoaded', handleUserLoaded);
+            
+            // Remove listener after timeout
+            setTimeout(() => {
+                window.removeEventListener('userLoaded', handleUserLoaded);
+                resolve(false);
+            }, 5000);
+        });
+        
+        let attempts = 0;
+        const maxAttempts = 50; // Wait up to 5 seconds
+        
+        while (attempts < maxAttempts) {
+            // Check if user is authenticated
+            if (talentSync.currentUser) {
+                console.log('Dashboard: User authenticated, initializing dashboard');
+                this.setupNavigation();
+                this.populateUserInfo();
+                this.setupSidebar();
+                this.loadDashboardData();
+                this.setupEventListeners();
+                return;
+            }
+            
+            // Check if Firebase is still initializing
+            if (firebaseService && firebaseService.auth) {
+                const firebaseUser = firebaseService.auth.currentUser;
+                if (firebaseUser) {
+                    console.log('Dashboard: Firebase user found, waiting for profile load...');
+                    // Wait for either the user to be loaded or the event to fire
+                    const userLoaded = await Promise.race([
+                        userLoadedPromise,
+                        new Promise(resolve => setTimeout(() => resolve(false), 1000))
+                    ]);
+                    
+                    if (userLoaded || talentSync.currentUser) {
+                        console.log('Dashboard: User profile loaded, initializing dashboard');
+                        this.setupNavigation();
+                        this.populateUserInfo();
+                        this.setupSidebar();
+                        this.loadDashboardData();
+                        this.setupEventListeners();
+                        return;
+                    }
+                }
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        // If we get here, no user was found after waiting
+        console.log('Dashboard: No authenticated user found, redirecting to home');
+        this.redirectToLogin();
+    }
+
+    redirectToLogin() {
+        // Show a message and redirect
+        if (typeof talentSync !== 'undefined' && talentSync.showToast) {
+            talentSync.showToast('Please log in to access the dashboard', 'info');
+        }
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 1000);
+    }
+
     checkUserAuth() {
         if (!talentSync.currentUser) {
-            // Redirect to login if no user found
-            window.location.href = 'index.html';
+            console.log('Dashboard: No user found in checkUserAuth');
             return false;
         }
         return true;
@@ -40,42 +111,68 @@ class Dashboard {
     }
 
     populateUserInfo() {
-        // Update user info in sidebar
-        document.getElementById('user-avatar').src = talentSync.currentUser.profile.avatar;
-        document.getElementById('user-name').textContent = talentSync.currentUser.fullName;
-        document.getElementById('user-role').textContent = talentSync.currentUser.role;
-
-        // Update profile section
-        document.getElementById('profile-avatar').src = talentSync.currentUser.profile.avatar;
-        document.getElementById('profile-name').textContent = talentSync.currentUser.fullName;
-        document.getElementById('profile-title').textContent = this.getProfileTitle();
-        document.getElementById('profile-bio').textContent = talentSync.currentUser.profile.bio || 'No bio available';
-
-        // Update profile rating
-        const profileRating = document.getElementById('profile-rating');
-        if (talentSync.currentUser.profile.rating > 0) {
-            profileRating.innerHTML = `
-                <div class="stars">${this.generateStars(talentSync.currentUser.profile.rating)}</div>
-                <span>${talentSync.currentUser.profile.rating} (${talentSync.currentUser.profile.reviews.length} reviews)</span>
-            `;
-        } else {
-            profileRating.innerHTML = '<span>No ratings yet</span>';
+        if (!talentSync.currentUser) {
+            console.error('Dashboard: No current user found when populating user info');
+            return;
         }
 
-        // Update skills
-        const skillsList = document.getElementById('skills-list');
-        if (talentSync.currentUser.profile.skills && talentSync.currentUser.profile.skills.length > 0) {
-            skillsList.innerHTML = talentSync.currentUser.profile.skills
-                .map(skill => `<span class="skill-tag">${skill}</span>`)
-                .join('');
-        } else {
-            skillsList.innerHTML = '<p>No skills added yet</p>';
+        try {
+            // Update user info in sidebar
+            const userAvatar = document.getElementById('user-avatar');
+            const userName = document.getElementById('user-name');
+            const userRole = document.getElementById('user-role');
+            
+            if (userAvatar) userAvatar.src = talentSync.currentUser.profile?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face';
+            if (userName) userName.textContent = talentSync.currentUser.fullName || 'User';
+            if (userRole) userRole.textContent = talentSync.currentUser.role || 'User';
+
+            // Update profile section
+            const profileAvatar = document.getElementById('profile-avatar');
+            const profileName = document.getElementById('profile-name');
+            const profileTitle = document.getElementById('profile-title');
+            const profileBio = document.getElementById('profile-bio');
+            
+            if (profileAvatar) profileAvatar.src = talentSync.currentUser.profile?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face';
+            if (profileName) profileName.textContent = talentSync.currentUser.fullName || 'User';
+            if (profileTitle) profileTitle.textContent = this.getProfileTitle();
+            if (profileBio) profileBio.textContent = talentSync.currentUser.profile?.bio || 'No bio available';
+
+            // Update profile rating
+            const profileRating = document.getElementById('profile-rating');
+            if (profileRating) {
+                if (talentSync.currentUser.profile?.rating > 0) {
+                    profileRating.innerHTML = `
+                        <div class="stars">${this.generateStars(talentSync.currentUser.profile.rating)}</div>
+                        <span>${talentSync.currentUser.profile.rating} (${talentSync.currentUser.profile.reviews?.length || 0} reviews)</span>
+                    `;
+                } else {
+                    profileRating.innerHTML = '<span>No ratings yet</span>';
+                }
+            }
+
+            // Update skills
+            const skillsList = document.getElementById('skills-list');
+            if (skillsList) {
+                if (talentSync.currentUser.profile?.skills && talentSync.currentUser.profile.skills.length > 0) {
+                    skillsList.innerHTML = talentSync.currentUser.profile.skills
+                        .map(skill => `<span class="skill-tag">${skill}</span>`)
+                        .join('');
+                } else {
+                    skillsList.innerHTML = '<p>No skills added yet</p>';
+                }
+            }
+            
+            console.log('Dashboard: User info populated successfully');
+        } catch (error) {
+            console.error('Dashboard: Error populating user info:', error);
         }
     }
 
     getProfileTitle() {
+        if (!talentSync.currentUser) return 'User';
+        
         if (talentSync.currentUser.role === 'freelancer') {
-            return talentSync.currentUser.profile.skills && talentSync.currentUser.profile.skills.length > 0 
+            return talentSync.currentUser.profile?.skills && talentSync.currentUser.profile.skills.length > 0 
                 ? talentSync.currentUser.profile.skills[0] + ' Specialist'
                 : 'Freelancer';
         } else {

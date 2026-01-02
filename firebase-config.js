@@ -376,6 +376,11 @@ class FirebaseService {
                     };
                     console.log('Updated talentSync currentUser');
                     talentSync.updateUI();
+                    
+                    // Dispatch a custom event to notify that user is loaded
+                    window.dispatchEvent(new CustomEvent('userLoaded', { 
+                        detail: { user: talentSync.currentUser } 
+                    }));
                 }
                 return { success: true, data: userData };
             } else {

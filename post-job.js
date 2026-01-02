@@ -27,28 +27,107 @@ class JobPoster {
     }
 
     init() {
-        // Wait for talentSync to be initialized
+        // Wait for talentSync to be initialized and user session to be loaded
         if (typeof talentSync !== 'undefined') {
-            this.checkUserAuth();
-            this.setupNavigation();
-            this.setupEventListeners();
-            this.updateStepIndicator();
+            // Wait for user session to be loaded (especially important for Firebase auth)
+            this.waitForUserAuth();
         } else {
             // Retry after a short delay
             setTimeout(() => this.init(), 100);
         }
     }
 
+    async waitForUserAuth() {
+        console.log('PostJob: Waiting for user authentication...');
+        
+        // Also listen for the userLoaded event
+        const userLoadedPromise = new Promise((resolve) => {
+            const handleUserLoaded = (event) => {
+                console.log('PostJob: User loaded event received');
+                window.removeEventListener('userLoaded', handleUserLoaded);
+                resolve(true);
+            };
+            window.addEventListener('userLoaded', handleUserLoaded);
+            
+            // Remove listener after timeout
+            setTimeout(() => {
+                window.removeEventListener('userLoaded', handleUserLoaded);
+                resolve(false);
+            }, 5000);
+        });
+        
+        let attempts = 0;
+        const maxAttempts = 50; // Wait up to 5 seconds
+        
+        while (attempts < maxAttempts) {
+            // Check if user is authenticated
+            if (talentSync.currentUser) {
+                console.log('PostJob: User authenticated, checking permissions');
+                if (this.checkUserAuth()) {
+                    console.log('PostJob: User authorized, initializing post job form');
+                    this.setupNavigation();
+                    this.setupEventListeners();
+                    this.updateStepIndicator();
+                    return;
+                }
+                return; // checkUserAuth will handle redirect if needed
+            }
+            
+            // Check if Firebase is still initializing
+            if (firebaseService && firebaseService.auth) {
+                const firebaseUser = firebaseService.auth.currentUser;
+                if (firebaseUser) {
+                    console.log('PostJob: Firebase user found, waiting for profile load...');
+                    // Wait for either the user to be loaded or the event to fire
+                    const userLoaded = await Promise.race([
+                        userLoadedPromise,
+                        new Promise(resolve => setTimeout(() => resolve(false), 1000))
+                    ]);
+                    
+                    if (userLoaded || talentSync.currentUser) {
+                        console.log('PostJob: User profile loaded, checking permissions');
+                        if (this.checkUserAuth()) {
+                            console.log('PostJob: User authorized, initializing post job form');
+                            this.setupNavigation();
+                            this.setupEventListeners();
+                            this.updateStepIndicator();
+                            return;
+                        }
+                        return; // checkUserAuth will handle redirect if needed
+                    }
+                }
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        // If we get here, no user was found after waiting
+        console.log('PostJob: No authenticated user found, redirecting to home');
+        this.redirectToLogin();
+    }
+
+    redirectToLogin() {
+        // Show a message and redirect
+        if (typeof talentSync !== 'undefined' && talentSync.showToast) {
+            talentSync.showToast('Please log in to post jobs', 'info');
+        }
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 1000);
+    }
+
     checkUserAuth() {
         if (!talentSync.currentUser) {
-            // Redirect to login if no user found
-            window.location.href = 'index.html';
+            console.log('PostJob: No user found in checkUserAuth');
             return false;
         }
         
         // Check if user is a client
         if (talentSync.currentUser.role !== 'client') {
-            talentSync.showToast('Only clients can post jobs. Please switch to a client account.', 'error');
+            if (typeof talentSync !== 'undefined' && talentSync.showToast) {
+                talentSync.showToast('Only clients can post jobs. Please switch to a client account.', 'error');
+            }
             setTimeout(() => {
                 window.location.href = 'dashboard.html';
             }, 2000);

@@ -1170,6 +1170,12 @@ class TalentSync {
                                 <i class="fas fa-tachometer-alt"></i>
                                 Dashboard
                             </a>
+                            ${this.currentUser.role === 'client' ? `
+                                <a href="post-job.html" class="dropdown-item">
+                                    <i class="fas fa-plus"></i>
+                                    Post a Job
+                                </a>
+                            ` : ''}
                             <a href="#" onclick="talentSync.showProfileModal()" class="dropdown-item">
                                 <i class="fas fa-user"></i>
                                 View Profile
@@ -1320,6 +1326,77 @@ class TalentSync {
             console.error('Firebase connection test failed:', error);
             this.showToast('Firebase connection test failed - check console', 'error');
             return false;
+        }
+    }
+
+    // Debug function to test dashboard access
+    testDashboardAccess() {
+        console.log('=== TESTING DASHBOARD ACCESS ===');
+        console.log('Current user:', this.currentUser);
+        console.log('Firebase user:', firebaseService?.auth?.currentUser);
+        console.log('Session storage:', sessionStorage.getItem('currentUser'));
+        console.log('Local storage:', localStorage.getItem('currentUser'));
+        
+        if (this.currentUser) {
+            console.log('User is authenticated, dashboard should be accessible');
+            this.showToast('User authenticated - dashboard access should work', 'success');
+            return true;
+        } else {
+            console.log('No user found - dashboard will redirect to login');
+            this.showToast('No user authenticated - please log in first', 'error');
+            return false;
+        }
+    }
+
+    // Debug function to test post job access
+    testPostJobAccess() {
+        console.log('=== TESTING POST JOB ACCESS ===');
+        console.log('Current user:', this.currentUser);
+        
+        if (this.currentUser) {
+            console.log('User role:', this.currentUser.role);
+            
+            if (this.currentUser.role === 'client') {
+                console.log('User is a client - post job should be accessible');
+                this.showToast('Client authenticated - post job access should work', 'success');
+                return true;
+            } else if (this.currentUser.role === 'freelancer') {
+                console.log('User is a freelancer - post job will redirect to dashboard');
+                this.showToast('Freelancers cannot post jobs - will redirect to dashboard', 'info');
+                return false;
+            } else {
+                console.log('Unknown user role:', this.currentUser.role);
+                this.showToast('Unknown user role - check user data', 'error');
+                return false;
+            }
+        } else {
+            console.log('No user found - post job will redirect to login');
+            this.showToast('No user authenticated - please log in first', 'error');
+            return false;
+        }
+    }
+
+    // Force dashboard navigation (for testing)
+    forceDashboardNavigation() {
+        if (this.currentUser) {
+            console.log('Forcing dashboard navigation...');
+            window.location.href = 'dashboard.html';
+        } else {
+            this.showToast('Please log in first', 'error');
+        }
+    }
+
+    // Force post job navigation (for testing)
+    forcePostJobNavigation() {
+        if (this.currentUser) {
+            if (this.currentUser.role === 'client') {
+                console.log('Forcing post job navigation...');
+                window.location.href = 'post-job.html';
+            } else {
+                this.showToast('Only clients can post jobs', 'error');
+            }
+        } else {
+            this.showToast('Please log in first', 'error');
         }
     }
 
