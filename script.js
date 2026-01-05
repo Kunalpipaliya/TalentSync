@@ -1386,6 +1386,29 @@ class TalentSync {
         }
     }
 
+    // Debug function to test category browsing
+    testCategoryBrowsing() {
+        console.log('=== TESTING CATEGORY BROWSING ===');
+        
+        const categories = [
+            'Web Development',
+            'Mobile Development', 
+            'Graphic Design',
+            'Content Writing',
+            'Digital Marketing',
+            'Video & Animation',
+            'Data Science'
+        ];
+        
+        categories.forEach(category => {
+            console.log(`Testing: ${category}`);
+            this.browseCategory(category);
+            const stored = sessionStorage.getItem('selectedCategory');
+            console.log(`Stored in sessionStorage: ${stored}`);
+            sessionStorage.removeItem('selectedCategory'); // Clean up
+        });
+    }
+
     // Force post job navigation (for testing)
     forcePostJobNavigation() {
         if (this.currentUser) {
@@ -1462,8 +1485,25 @@ class TalentSync {
     }
 
     browseCategory(category) {
+        // Map category titles to filter values
+        const categoryMapping = {
+            'Web Development': 'web-development',
+            'Mobile Development': 'mobile-development', 
+            'Graphic Design': 'design',
+            'Content Writing': 'writing',
+            'Digital Marketing': 'marketing',
+            'Video & Animation': 'video-editing',
+            'Data Science': 'data-science',
+            'Voice & Audio': 'translation'
+        };
+        
+        // Get the filter value for the category
+        const filterValue = categoryMapping[category] || category.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '');
+        
+        console.log(`Browsing category: ${category} -> ${filterValue}`);
+        
         // Store category for filtering on browse page
-        sessionStorage.setItem('selectedCategory', category);
+        sessionStorage.setItem('selectedCategory', filterValue);
 
         this.showToast(`Browsing ${category} projects`, 'info');
 

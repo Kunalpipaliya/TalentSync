@@ -70,7 +70,11 @@ class JobBrowser {
             this.generateDemoJobs();
         }
         
+        // Load jobs and then handle incoming search/category filters
         this.loadJobs();
+        
+        // Handle incoming search/category after jobs are loaded
+        this.handleIncomingSearch();
     }
 
     setupRealtimeJobListener() {
@@ -367,15 +371,17 @@ class JobBrowser {
                 this.updateProposalSummary();
             });
         }
-        
-        // Check for search query from main page
-        this.handleIncomingSearch();
     }
     
     handleIncomingSearch() {
         const searchQuery = sessionStorage.getItem('searchQuery');
         const searchType = sessionStorage.getItem('searchType');
         const selectedCategory = sessionStorage.getItem('selectedCategory');
+        
+        console.log('Browse Jobs: Handling incoming search/category');
+        console.log('Search query:', searchQuery);
+        console.log('Search type:', searchType);
+        console.log('Selected category:', selectedCategory);
         
         if (searchQuery && searchType === 'jobs') {
             const jobSearch = document.getElementById('job-search');
@@ -389,12 +395,15 @@ class JobBrowser {
         }
         
         if (selectedCategory) {
+            console.log('Applying category filter:', selectedCategory);
             this.currentFilters.category = [selectedCategory];
+            
             // Update active filter tag
             document.querySelectorAll('.filter-tag').forEach(tag => {
                 tag.classList.remove('active');
                 if (tag.dataset.filter === selectedCategory) {
                     tag.classList.add('active');
+                    console.log('Activated filter tag:', tag.textContent);
                 }
             });
             sessionStorage.removeItem('selectedCategory');
@@ -437,6 +446,9 @@ class JobBrowser {
     }
 
     applyFilters() {
+        console.log('Applying filters:', this.currentFilters);
+        console.log('Total jobs before filtering:', this.jobs.length);
+        
         this.filteredJobs = this.jobs.filter(job => {
             // Search filter
             if (this.currentFilters.search) {
@@ -456,7 +468,11 @@ class JobBrowser {
 
             // Category filter
             if (this.currentFilters.category.length > 0) {
-                if (!this.currentFilters.category.includes(job.category)) return false;
+                console.log(`Checking job category: ${job.category} against filters: ${this.currentFilters.category}`);
+                if (!this.currentFilters.category.includes(job.category)) {
+                    console.log(`Job ${job.title} filtered out - category ${job.category} not in ${this.currentFilters.category}`);
+                    return false;
+                }
             }
 
             // Budget filter
@@ -492,6 +508,8 @@ class JobBrowser {
             return true;
         });
 
+        console.log('Jobs after filtering:', this.filteredJobs.length);
+        
         this.sortJobs(this.currentSort);
         this.currentPage = 1;
         this.displayJobs();
@@ -644,12 +662,16 @@ class JobBrowser {
     }
 
     loadJobs() {
-        // Load jobs from localStorage or use generated ones
-        const storedJobs = localStorage.getItem('jobs');
-        if (storedJobs) {
-            this.jobs = JSON.parse(storedJobs);
+        // Only load from localStorage if no jobs are already loaded (fallback)
+        if (!this.jobs || this.jobs.length === 0) {
+            const storedJobs = localStorage.getItem('jobs');
+            if (storedJobs) {
+                this.jobs = JSON.parse(storedJobs);
+                console.log('Loaded jobs from localStorage as fallback');
+            }
         }
         
+        console.log(`Total jobs available: ${this.jobs.length}`);
         this.filteredJobs = [...this.jobs];
         this.sortJobs('newest');
         this.displayJobs();
@@ -877,6 +899,20 @@ class JobBrowser {
         } else {
             talentSync.showToast('Job already in your favorites', 'info');
         }
+    }
+
+    // Debug function to test category filtering
+    testCategoryFilter(category) {
+        console.log('=== TESTING CATEGORY FILTER ===');
+        console.log('Available jobs:', this.jobs.length);
+        console.log('Job categories:', [...new Set(this.jobs.map(j => j.category))]);
+        console.log('Testing filter for category:', category);
+        
+        this.currentFilters.category = [category];
+        this.applyFilters();
+        
+        console.log('Filtered jobs:', this.filteredJobs.length);
+        console.log('Filtered job titles:', this.filteredJobs.map(j => j.title));
     }
 
     logout() {

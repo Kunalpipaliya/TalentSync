@@ -63,6 +63,7 @@
             <button class="btn" onclick="createDemoData()">Create Demo Data</button>
             <button class="btn" onclick="testDashboardAccess()">Test Dashboard Access</button>
             <button class="btn" onclick="testPostJobAccess()">Test Post Job Access</button>
+            <button class="btn" onclick="testCategoryFiltering()">Test Category Filtering</button>
             <button class="btn" onclick="clearLog()">Clear Log</button>
         </div>
         
@@ -155,6 +156,78 @@
                 
                 // Test loading after creation
                 setTimeout(testDataLoading, 2000);
+                
+            } catch (error) {
+                log(`ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCategoryFiltering() {
+            log('Testing category filtering...', 'info');
+            
+            try {
+                // Test category mapping
+                const categories = [
+                    'Web Development',
+                    'Mobile Development', 
+                    'Graphic Design',
+                    'Content Writing',
+                    'Digital Marketing',
+                    'Video & Animation',
+                    'Data Science'
+                ];
+                
+                log('Testing category mappings:', 'info');
+                categories.forEach(category => {
+                    // Simulate the browseCategory function logic
+                    const categoryMapping = {
+                        'Web Development': 'web-development',
+                        'Mobile Development': 'mobile-development', 
+                        'Graphic Design': 'design',
+                        'Content Writing': 'writing',
+                        'Digital Marketing': 'marketing',
+                        'Video & Animation': 'video-editing',
+                        'Data Science': 'data-science',
+                        'Voice & Audio': 'translation'
+                    };
+                    
+                    const filterValue = categoryMapping[category] || category.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '');
+                    log(`${category} -> ${filterValue}`, 'success');
+                });
+                
+                // Test setting and getting from sessionStorage
+                log('Testing sessionStorage...', 'info');
+                sessionStorage.setItem('selectedCategory', 'web-development');
+                const stored = sessionStorage.getItem('selectedCategory');
+                log(`Stored: web-development, Retrieved: ${stored}`, stored === 'web-development' ? 'success' : 'error');
+                
+                // Test the actual browseCategory function if available
+                if (typeof talentSync !== 'undefined' && talentSync.browseCategory) {
+                    log('Testing browseCategory function...', 'info');
+                    // Don't actually redirect, just test the storage
+                    const originalHref = window.location.href;
+                    
+                    // Override window.location.href temporarily
+                    let redirectUrl = '';
+                    Object.defineProperty(window.location, 'href', {
+                        set: function(url) { redirectUrl = url; },
+                        get: function() { return originalHref; }
+                    });
+                    
+                    talentSync.browseCategory('Web Development');
+                    const categoryStored = sessionStorage.getItem('selectedCategory');
+                    log(`browseCategory test - stored: ${categoryStored}`, categoryStored === 'web-development' ? 'success' : 'error');
+                    
+                    // Restore original behavior
+                    Object.defineProperty(window.location, 'href', {
+                        value: originalHref,
+                        writable: true
+                    });
+                }
+                
+                sessionStorage.removeItem('selectedCategory');
+                log('Category filtering test completed', 'success');
+                log('Try clicking on a category in the index page to test', 'info');
                 
             } catch (error) {
                 log(`ERROR: ${error.message}`, 'error');
