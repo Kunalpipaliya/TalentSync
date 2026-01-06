@@ -1029,3 +1029,119 @@
         font-size: 0.8rem;
     }
 }
+
+/* Authentication Error Styles */
+.auth-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    width: 100%;
+    background: var(--surface);
+}
+
+.auth-error-content {
+    text-align: center;
+    padding: 3rem;
+    background: var(--background);
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px var(--shadow);
+    max-width: 400px;
+    width: 90%;
+}
+
+.auth-error-content i {
+    font-size: 4rem;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+}
+
+.auth-error-content h2 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.auth-error-content p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.auth-error-content .btn {
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+}
+/* Chat Options Modal Styles */
+.chat-options-modal {
+    max-width: 400px;
+    width: 90%;
+}
+
+.chat-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.option-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.option-item:hover {
+    background: var(--surface);
+    border-color: var(--border);
+}
+
+.option-item i {
+    width: 20px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+.option-content {
+    flex: 1;
+}
+
+.option-content h4 {
+    margin: 0 0 0.25rem 0;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.option-content p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+/* Special styling for destructive actions */
+.option-item:has(i.fa-trash),
+.option-item:has(i.fa-ban) {
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.option-item:has(i.fa-trash):hover,
+.option-item:has(i.fa-ban):hover {
+    background: rgba(239, 68, 68, 0.05);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.option-item:has(i.fa-trash) i,
+.option-item:has(i.fa-ban) i {
+    color: #ef4444;
+}
+
+.option-item:has(i.fa-trash) h4,
+.option-item:has(i.fa-ban) h4 {
+    color: #ef4444;
+}

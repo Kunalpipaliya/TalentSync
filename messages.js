@@ -12,22 +12,75 @@ class MessageApp {
     init() {
         // Wait for talentSync to be initialized
         if (typeof talentSync !== 'undefined') {
-            this.checkUserAuth();
-            this.setupNavigation();
-            this.loadUsers();
-            this.generateDemoConversations();
-            this.setupEventListeners();
-            this.loadConversations();
+            this.waitForUserAuth();
         } else {
             // Retry after a short delay
             setTimeout(() => this.init(), 100);
         }
     }
 
+    async waitForUserAuth() {
+        console.log('Messages: Waiting for user authentication...');
+        
+        // Wait up to 5 seconds for user authentication
+        let attempts = 0;
+        const maxAttempts = 50;
+        
+        while (attempts < maxAttempts) {
+            if (talentSync.currentUser) {
+                console.log('Messages: User authenticated, initializing messages');
+                this.setupNavigation();
+                this.loadUsers();
+                this.generateDemoConversations();
+                this.setupEventListeners();
+                this.loadConversations();
+                return;
+            }
+            
+            // Check if Firebase user exists
+            if (firebaseService && firebaseService.auth && firebaseService.auth.currentUser) {
+                console.log('Messages: Firebase user found, waiting for profile load...');
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+            
+            if (attempts % 10 === 0) {
+                console.log(`Messages: Still waiting for user... attempt ${attempts}/${maxAttempts}`);
+            }
+        }
+        
+        console.log('Messages: User authentication timeout, redirecting to home');
+        this.showAuthError();
+    }
+
+    showAuthError() {
+        // Show error message before redirecting
+        const messagesContainer = document.querySelector('.messages-container');
+        if (messagesContainer) {
+            messagesContainer.innerHTML = `
+                <div class="auth-error">
+                    <div class="auth-error-content">
+                        <i class="fas fa-lock"></i>
+                        <h2>Authentication Required</h2>
+                        <p>Please log in to access your messages.</p>
+                        <button class="btn btn-primary" onclick="window.location.href='index.html'">
+                            Go to Login
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Redirect after showing the message
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 1000);
+    }
+
     checkUserAuth() {
         if (!talentSync.currentUser) {
-            // Redirect to login if no user found
-            window.location.href = 'index.html';
+            console.log('Messages: No user found in checkUserAuth');
             return false;
         }
         return true;
@@ -48,13 +101,31 @@ class MessageApp {
         const navMenu = document.getElementById('nav-menu');
         
         if (navToggle && navMenu) {
-            navToggle.addEventListener('click', () => {
+            // Add ARIA attributes for accessibility
+            navToggle.setAttribute('aria-label', 'Toggle navigation menu');
+            navToggle.setAttribute('aria-expanded', 'false');
+            navToggle.setAttribute('aria-controls', 'nav-menu');
+            navMenu.setAttribute('aria-hidden', 'true');
+
+            navToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                const isActive = navMenu.classList.contains('active');
+                
                 navMenu.classList.toggle('active');
                 navToggle.classList.toggle('active');
+
+                // Update ARIA attributes
+                navToggle.setAttribute('aria-expanded', !isActive);
+                navMenu.setAttribute('aria-hidden', isActive);
                 
                 // Prevent body scroll when menu is open
                 if (navMenu.classList.contains('active')) {
                     document.body.style.overflow = 'hidden';
+                    // Focus first menu item for keyboard navigation
+                    const firstLink = navMenu.querySelector('.nav-link');
+                    if (firstLink) {
+                        setTimeout(() => firstLink.focus(), 100);
+                    }
                 } else {
                     document.body.style.overflow = 'auto';
                 }
@@ -63,20 +134,118 @@ class MessageApp {
             // Close menu when clicking on a link
             navMenu.querySelectorAll('.nav-link').forEach(link => {
                 link.addEventListener('click', () => {
-                    navMenu.classList.remove('active');
-                    navToggle.classList.remove('active');
-                    document.body.style.overflow = 'auto';
+                    this.closeMobileMenu();
                 });
             });
             
             // Close menu when clicking outside
             document.addEventListener('click', (e) => {
                 if (!navToggle.contains(e.target) && !navMenu.contains(e.target)) {
-                    navMenu.classList.remove('active');
-                    navToggle.classList.remove('active');
-                    document.body.style.overflow = 'auto';
+                    this.closeMobileMenu();
                 }
             });
+
+            // Close menu on escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && navMenu.classList.contains('active')) {
+                    this.closeMobileMenu();
+                    navToggle.focus();
+                }
+            });
+        }
+
+        // Setup mobile messages navigation
+        this.setupMobileMessagesNavigation();
+    }
+
+    closeMobileMenu() {
+        const navToggle = document.getElementById('nav-toggle');
+        const navMenu = document.getElementById('nav-menu');
+        
+        if (navToggle && navMenu) {
+            navMenu.classList.remove('active');
+            navToggle.classList.remove('active');
+            navToggle.setAttribute('aria-expanded', 'false');
+            navMenu.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = 'auto';
+        }
+    }
+
+    setupMobileMessagesNavigation() {
+        // Add mobile navigation for messages
+        const conversationItems = document.querySelectorAll('.conversation-item');
+        const chatArea = document.querySelector('.chat-area');
+        const conversationsSidebar = document.querySelector('.conversations-sidebar');
+
+        conversationItems.forEach(item => {
+            item.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    // Mobile: Show chat area and hide conversations
+                    if (chatArea) {
+                        chatArea.classList.add('active');
+                        chatArea.style.display = 'flex';
+                    }
+                    if (conversationsSidebar) {
+                        conversationsSidebar.classList.add('chat-active');
+                    }
+                    
+                    // Add back button to chat header
+                    this.addMobileBackButton();
+                }
+            });
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                // Desktop: Reset mobile states
+                if (chatArea) {
+                    chatArea.classList.remove('active');
+                    chatArea.style.display = 'flex';
+                }
+                if (conversationsSidebar) {
+                    conversationsSidebar.classList.remove('chat-active');
+                }
+                this.removeMobileBackButton();
+            }
+        });
+    }
+
+    addMobileBackButton() {
+        const chatHeader = document.querySelector('.chat-header');
+        if (chatHeader && !chatHeader.querySelector('.mobile-back-btn')) {
+            const backButton = document.createElement('button');
+            backButton.className = 'mobile-back-btn btn btn-outline';
+            backButton.innerHTML = '<i class="fas fa-arrow-left"></i>';
+            backButton.style.marginRight = '1rem';
+            
+            backButton.addEventListener('click', () => {
+                this.showConversationsList();
+            });
+            
+            chatHeader.insertBefore(backButton, chatHeader.firstChild);
+        }
+    }
+
+    removeMobileBackButton() {
+        const backButton = document.querySelector('.mobile-back-btn');
+        if (backButton) {
+            backButton.remove();
+        }
+    }
+
+    showConversationsList() {
+        const chatArea = document.querySelector('.chat-area');
+        const conversationsSidebar = document.querySelector('.conversations-sidebar');
+        
+        if (chatArea) {
+            chatArea.classList.remove('active');
+            if (window.innerWidth <= 768) {
+                chatArea.style.display = 'none';
+            }
+        }
+        if (conversationsSidebar) {
+            conversationsSidebar.classList.remove('chat-active');
         }
     }
 
@@ -178,16 +347,47 @@ class MessageApp {
     }
 
     setupEventListeners() {
+        console.log('Messages: Setting up event listeners...');
+        
         // Message form submission
         const messageForm = document.getElementById('message-form');
         if (messageForm) {
-            messageForm.addEventListener('submit', (e) => this.sendMessage(e));
+            console.log('Messages: Found message form, adding submit listener');
+            messageForm.addEventListener('submit', (e) => {
+                console.log('Messages: Form submit event triggered');
+                this.sendMessage(e);
+            });
+            
+            // Also add click listener to send button as backup
+            const sendBtn = messageForm.querySelector('.send-btn');
+            if (sendBtn) {
+                console.log('Messages: Found send button, adding click listener');
+                sendBtn.addEventListener('click', (e) => {
+                    console.log('Messages: Send button clicked');
+                    e.preventDefault();
+                    this.sendMessage(e);
+                });
+            }
+        } else {
+            console.log('Messages: Message form not found');
         }
 
-        // Message input typing indicator
+        // Message input typing indicator and Enter key
         const messageInput = document.getElementById('message-input');
         if (messageInput) {
+            console.log('Messages: Found message input, adding listeners');
             messageInput.addEventListener('input', () => this.handleTyping());
+            
+            // Add Enter key listener
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    console.log('Messages: Enter key pressed in message input');
+                    e.preventDefault();
+                    this.sendMessage(e);
+                }
+            });
+        } else {
+            console.log('Messages: Message input not found');
         }
 
         // Conversation search
@@ -207,6 +407,8 @@ class MessageApp {
         if (userSearch) {
             userSearch.addEventListener('input', (e) => this.searchUsers(e.target.value));
         }
+        
+        console.log('Messages: Event listeners setup complete');
     }
 
     loadConversations() {
@@ -258,17 +460,41 @@ class MessageApp {
     }
 
     getOtherParticipant(conversation) {
-        const otherParticipantId = conversation.participants.find(id => id !== talentSync.currentUser.id);
-        return this.users.find(u => u.id === otherParticipantId) || {
-            id: otherParticipantId,
-            fullName: 'Unknown User',
-            profile: { avatar: 'https://via.placeholder.com/50' }
-        };
+        const currentUserId = talentSync.currentUser.uid || talentSync.currentUser.id;
+        const otherParticipantId = conversation.participants.find(id => id !== currentUserId);
+        
+        // Try to find user by both id and uid
+        let otherUser = this.users.find(u => u.id === otherParticipantId || u.uid === otherParticipantId);
+        
+        if (!otherUser) {
+            console.log('Messages: Could not find other participant with ID:', otherParticipantId);
+            console.log('Messages: Available users:', this.users.map(u => ({ id: u.id, uid: u.uid, name: u.fullName })));
+            
+            // Return a placeholder user
+            otherUser = {
+                id: otherParticipantId,
+                uid: otherParticipantId,
+                fullName: 'Unknown User',
+                email: 'unknown@example.com',
+                role: 'user',
+                profile: { 
+                    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+                    bio: 'User profile not available'
+                }
+            };
+        }
+        
+        return otherUser;
     }
 
     selectConversation(conversationId) {
+        console.log('Messages: Selecting conversation:', conversationId);
+        
         this.activeConversation = this.conversations.find(c => c.id === conversationId);
-        if (!this.activeConversation) return;
+        if (!this.activeConversation) {
+            console.log('Messages: Conversation not found');
+            return;
+        }
 
         // Mark messages as read
         this.activeConversation.messages.forEach(message => {
@@ -298,6 +524,61 @@ class MessageApp {
 
         // Refresh conversations list to update unread indicators
         this.loadConversations();
+        
+        // Re-setup event listeners for the now-visible message form
+        console.log('Messages: Re-setting up event listeners for active chat');
+        setTimeout(() => {
+            this.setupMessageFormListeners();
+        }, 100);
+    }
+
+    setupMessageFormListeners() {
+        console.log('Messages: Setting up message form listeners...');
+        
+        // Setup message form submit listener
+        const messageForm = document.getElementById('message-form');
+        if (messageForm) {
+            console.log('Messages: Found message form, adding submit listener');
+            
+            // Remove existing listeners by cloning the form
+            const newForm = messageForm.cloneNode(true);
+            messageForm.parentNode.replaceChild(newForm, messageForm);
+            
+            newForm.addEventListener('submit', (e) => {
+                console.log('Messages: Form submit event triggered');
+                e.preventDefault();
+                this.sendMessage(e);
+            });
+        }
+        
+        // Setup send button click listener
+        const sendBtn = document.querySelector('.send-btn');
+        if (sendBtn) {
+            console.log('Messages: Found send button, adding click listener');
+            sendBtn.addEventListener('click', (e) => {
+                console.log('Messages: Send button clicked');
+                e.preventDefault();
+                this.sendMessage(e);
+            });
+        }
+        
+        // Setup message input Enter key listener
+        const messageInput = document.getElementById('message-input');
+        if (messageInput) {
+            console.log('Messages: Found message input, adding keypress listener');
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    console.log('Messages: Enter key pressed in message input');
+                    e.preventDefault();
+                    this.sendMessage(e);
+                }
+            });
+            
+            // Focus the input
+            messageInput.focus();
+        }
+        
+        console.log('Messages: Message form listeners setup complete');
     }
 
     loadMessages() {
@@ -336,10 +617,15 @@ class MessageApp {
         const messageInput = document.getElementById('message-input');
         const content = messageInput.value.trim();
         
-        if (!content || !this.activeConversation) return;
+        if (!content || !this.activeConversation) {
+            console.log('Messages: Cannot send message - no content or active conversation');
+            return;
+        }
+
+        console.log('Messages: Sending message:', content);
 
         const newMessage = {
-            senderId: talentSync.currentUser.id || talentSync.currentUser.uid,
+            senderId: talentSync.currentUser.uid || talentSync.currentUser.id,
             conversationId: this.activeConversation.id,
             content: content,
             timestamp: new Date().toISOString(),
@@ -350,48 +636,60 @@ class MessageApp {
         messageInput.disabled = true;
         messageInput.placeholder = 'Sending...';
 
-        if (talentSync.useFirebase && firebaseService) {
-            // Save to Firebase with retry logic
-            const result = await firebaseService.executeWithRetry(async () => {
-                return await firebaseService.saveMessage(newMessage);
-            });
-            
-            if (result.success) {
+        try {
+            if (talentSync.useFirebase && firebaseService) {
+                console.log('Messages: Using Firebase to send message');
+                // Save to Firebase with retry logic
+                const result = await firebaseService.executeWithRetry(async () => {
+                    return await firebaseService.saveMessage(newMessage);
+                });
+                
+                if (result.success) {
+                    console.log('Messages: Message sent successfully via Firebase');
+                    // Clear input
+                    messageInput.value = '';
+                    messageInput.disabled = false;
+                    messageInput.placeholder = 'Type your message...';
+                    talentSync.showToast('Message sent!', 'success');
+                    
+                    // Messages will be updated via real-time listener
+                } else {
+                    console.error('Messages: Failed to send message via Firebase:', result.error);
+                    messageInput.disabled = false;
+                    messageInput.placeholder = 'Type your message...';
+                    talentSync.showToast('Failed to send message. Please try again.', 'error');
+                }
+            } else {
+                console.log('Messages: Using localStorage fallback to send message');
+                // Fallback to localStorage
+                newMessage.id = `msg_${Date.now()}`;
+                newMessage.read = true;
+                
+                // Add message to conversation
+                this.activeConversation.messages.push(newMessage);
+                this.activeConversation.lastActivity = newMessage.timestamp;
+
                 // Clear input
                 messageInput.value = '';
                 messageInput.disabled = false;
                 messageInput.placeholder = 'Type your message...';
-                talentSync.showToast('Message sent!', 'success');
-                
-                // Messages will be updated via real-time listener
-            } else {
-                messageInput.disabled = false;
-                messageInput.placeholder = 'Type your message...';
-                talentSync.showToast('Failed to send message. Please try again.', 'error');
-            }
-        } else {
-            // Fallback to localStorage
-            newMessage.id = `msg_${Date.now()}`;
-            newMessage.read = true;
-            
-            // Add message to conversation
-            this.activeConversation.messages.push(newMessage);
-            this.activeConversation.lastActivity = newMessage.timestamp;
 
-            // Clear input
-            messageInput.value = '';
+                // Save conversations
+                this.saveConversations();
+
+                // Reload messages and conversations
+                this.loadMessages();
+                this.loadConversations();
+
+                // Show success feedback
+                talentSync.showToast('Message sent!', 'success');
+                console.log('Messages: Message sent successfully via localStorage');
+            }
+        } catch (error) {
+            console.error('Messages: Error sending message:', error);
             messageInput.disabled = false;
             messageInput.placeholder = 'Type your message...';
-
-            // Save conversations
-            this.saveConversations();
-
-            // Reload messages and conversations
-            this.loadMessages();
-            this.loadConversations();
-
-            // Show success feedback
-            talentSync.showToast('Message sent!', 'success');
+            talentSync.showToast('Failed to send message. Please try again.', 'error');
         }
     }
 
@@ -624,9 +922,22 @@ class MessageApp {
     }
 
     showUserProfile() {
-        if (!this.activeConversation) return;
+        console.log('Messages: Showing user profile');
+        
+        if (!this.activeConversation) {
+            console.log('Messages: No active conversation for profile display');
+            talentSync.showToast('Please select a conversation first', 'warning');
+            return;
+        }
         
         const otherParticipant = this.getOtherParticipant(this.activeConversation);
+        console.log('Messages: Other participant:', otherParticipant);
+        
+        if (!otherParticipant) {
+            console.log('Messages: Could not find other participant');
+            talentSync.showToast('Could not load user profile', 'error');
+            return;
+        }
         
         const modalHTML = `
             <div class="modal user-profile-modal">
@@ -639,22 +950,90 @@ class MessageApp {
                 <div class="modal-body">
                     <div class="user-profile-content">
                         <div class="profile-header">
-                            <img src="${otherParticipant.profile.avatar}" alt="${otherParticipant.fullName}">
-                            <div class="profile-info">
+                            <img src="${otherParticipant.profile.avatar}" alt="${otherParticipant.fullName}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover;">
+                            <div class="profile-info" style="margin-left: 1rem;">
                                 <h3>${otherParticipant.fullName}</h3>
-                                <p>${otherParticipant.role}</p>
-                                <p>${otherParticipant.email}</p>
+                                <p style="color: var(--text-secondary); text-transform: capitalize;">${otherParticipant.role}</p>
+                                <p style="color: var(--text-muted); font-size: 0.9rem;">${otherParticipant.email}</p>
                             </div>
                         </div>
-                        <div class="profile-details">
-                            <h4>About</h4>
-                            <p>${otherParticipant.profile.bio || 'No bio available'}</p>
+                        <div class="profile-details" style="margin-top: 2rem;">
+                            <h4 style="margin-bottom: 0.5rem;">About</h4>
+                            <p style="color: var(--text-secondary); line-height: 1.6;">${otherParticipant.profile.bio || 'No bio available'}</p>
                             ${otherParticipant.profile.skills && otherParticipant.profile.skills.length > 0 ? `
-                                <h4>Skills</h4>
-                                <div class="skills-list">
-                                    ${otherParticipant.profile.skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
+                                <h4 style="margin: 1.5rem 0 0.5rem 0;">Skills</h4>
+                                <div class="skills-list" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                    ${otherParticipant.profile.skills.map(skill => `<span class="skill-tag" style="background: var(--secondary-color); color: var(--text-primary); padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.8rem;">${skill}</span>`).join('')}
                                 </div>
                             ` : ''}
+                            ${otherParticipant.profile.hourlyRate ? `
+                                <h4 style="margin: 1.5rem 0 0.5rem 0;">Hourly Rate</h4>
+                                <p style="color: var(--primary-color); font-weight: 600; font-size: 1.1rem;">$${otherParticipant.profile.hourlyRate}/hr</p>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        console.log('Messages: Showing profile modal');
+        talentSync.showModal(modalHTML);
+    }
+
+    closeUserProfileModal() {
+        talentSync.closeModal();
+    }
+
+    toggleChatOptions() {
+        console.log('Messages: Showing chat options');
+        
+        if (!this.activeConversation) {
+            talentSync.showToast('Please select a conversation first', 'warning');
+            return;
+        }
+        
+        const otherParticipant = this.getOtherParticipant(this.activeConversation);
+        
+        const modalHTML = `
+            <div class="modal chat-options-modal">
+                <div class="modal-header">
+                    <h2 class="modal-title">Chat Options</h2>
+                    <button class="modal-close" onclick="talentSync.closeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="chat-options-list">
+                        <div class="option-item" onclick="messageApp.showUserProfile(); talentSync.closeModal();">
+                            <i class="fas fa-user"></i>
+                            <div class="option-content">
+                                <h4>View Profile</h4>
+                                <p>See ${otherParticipant.fullName}'s profile information</p>
+                            </div>
+                        </div>
+                        
+                        <div class="option-item" onclick="messageApp.clearConversation()">
+                            <i class="fas fa-trash"></i>
+                            <div class="option-content">
+                                <h4>Clear Conversation</h4>
+                                <p>Delete all messages in this conversation</p>
+                            </div>
+                        </div>
+                        
+                        <div class="option-item" onclick="messageApp.muteConversation()">
+                            <i class="fas fa-bell-slash"></i>
+                            <div class="option-content">
+                                <h4>Mute Notifications</h4>
+                                <p>Stop receiving notifications for this chat</p>
+                            </div>
+                        </div>
+                        
+                        <div class="option-item" onclick="messageApp.blockUser()">
+                            <i class="fas fa-ban"></i>
+                            <div class="option-content">
+                                <h4>Block User</h4>
+                                <p>Block ${otherParticipant.fullName} from messaging you</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -664,12 +1043,40 @@ class MessageApp {
         talentSync.showModal(modalHTML);
     }
 
-    closeUserProfileModal() {
-        talentSync.closeModal();
+    clearConversation() {
+        if (!this.activeConversation) return;
+        
+        if (confirm('Are you sure you want to clear all messages in this conversation? This action cannot be undone.')) {
+            this.activeConversation.messages = [];
+            this.saveConversations();
+            this.loadMessages();
+            this.loadConversations();
+            talentSync.closeModal();
+            talentSync.showToast('Conversation cleared', 'success');
+        }
     }
 
-    toggleChatOptions() {
-        talentSync.showToast('Chat options coming soon!', 'info');
+    muteConversation() {
+        if (!this.activeConversation) return;
+        
+        this.activeConversation.muted = !this.activeConversation.muted;
+        this.saveConversations();
+        talentSync.closeModal();
+        
+        const status = this.activeConversation.muted ? 'muted' : 'unmuted';
+        talentSync.showToast(`Conversation ${status}`, 'success');
+    }
+
+    blockUser() {
+        if (!this.activeConversation) return;
+        
+        const otherParticipant = this.getOtherParticipant(this.activeConversation);
+        
+        if (confirm(`Are you sure you want to block ${otherParticipant.fullName}? They will no longer be able to message you.`)) {
+            // In a real app, this would be handled by the backend
+            talentSync.closeModal();
+            talentSync.showToast(`${otherParticipant.fullName} has been blocked`, 'success');
+        }
     }
 
     // Utility functions

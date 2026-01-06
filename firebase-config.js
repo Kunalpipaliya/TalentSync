@@ -92,8 +92,13 @@ class FirebaseService {
         try {
             console.log('Initializing Firebase collections...');
             
-            // Check if collections exist and create indexes if needed
-            const collections = ['users', 'jobs', 'freelancers', 'proposals', 'messages'];
+            // Enhanced collections for new features
+            const collections = [
+                'users', 'jobs', 'freelancers', 'proposals', 'messages',
+                'projects', 'payments', 'reviews', 'notifications', 'achievements',
+                'savedSearches', 'recentlyViewed', 'portfolios', 'contracts',
+                'timeTracking', 'invoices', 'disputes', 'forums', 'mentorships'
+            ];
             
             for (const collectionName of collections) {
                 try {
@@ -705,6 +710,308 @@ class FirebaseService {
         } catch (error) {
             console.error('Debug data loading failed:', error);
             return { error: error.message };
+        }
+    }
+
+    // Payment Management
+    async createPayment(paymentData) {
+        try {
+            console.log('Creating payment:', paymentData);
+            
+            const payment = {
+                ...paymentData,
+                id: this.generateId(),
+                status: 'pending',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            const docRef = await this.db.collection('payments').add(payment);
+            console.log('Payment created with ID:', docRef.id);
+            
+            return { success: true, id: docRef.id, payment };
+        } catch (error) {
+            console.error('Error creating payment:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async getPaymentHistory(userId, userRole = 'client') {
+        try {
+            const field = userRole === 'client' ? 'clientId' : 'freelancerId';
+            const snapshot = await this.db.collection('payments')
+                .where(field, '==', userId)
+                .orderBy('createdAt', 'desc')
+                .limit(50)
+                .get();
+
+            const payments = [];
+            snapshot.forEach(doc => {
+                payments.push({
+                    id: doc.id,
+                    ...doc.data(),
+                    createdAt: doc.data().createdAt?.toDate()?.toISOString(),
+                    updatedAt: doc.data().updatedAt?.toDate()?.toISOString()
+                });
+            });
+
+            return { success: true, payments };
+        } catch (error) {
+            console.error('Error fetching payment history:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async updatePaymentStatus(paymentId, status, metadata = {}) {
+        try {
+            await this.db.collection('payments').doc(paymentId).update({
+                status,
+                ...metadata,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error updating payment status:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Contract/Milestone Management
+    async createContract(contractData) {
+        try {
+            const contract = {
+                ...contractData,
+                id: this.generateId(),
+                status: 'active',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            const docRef = await this.db.collection('contracts').add(contract);
+            return { success: true, id: docRef.id, contract };
+        } catch (error) {
+            console.error('Error creating contract:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async getContract(contractId) {
+        try {
+            const doc = await this.db.collection('contracts').doc(contractId).get();
+            if (doc.exists) {
+                return {
+                    success: true,
+                    contract: {
+                        id: doc.id,
+                        ...doc.data(),
+                        createdAt: doc.data().createdAt?.toDate()?.toISOString(),
+                        updatedAt: doc.data().updatedAt?.toDate()?.toISOString()
+                    }
+                };
+            }
+            return { success: false, error: 'Contract not found' };
+        } catch (error) {
+            console.error('Error fetching contract:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async updateMilestone(contractId, milestoneId, updates) {
+        try {
+            const contractRef = this.db.collection('contracts').doc(contractId);
+            const contractDoc = await contractRef.get();
+            
+            if (!contractDoc.exists) {
+                return { success: false, error: 'Contract not found' };
+            }
+
+            const contract = contractDoc.data();
+            const milestones = contract.milestones || [];
+            const milestoneIndex = milestones.findIndex(m => m.id === milestoneId);
+            
+            if (milestoneIndex === -1) {
+                return { success: false, error: 'Milestone not found' };
+            }
+
+            milestones[milestoneIndex] = {
+                ...milestones[milestoneIndex],
+                ...updates,
+                updatedAt: new Date().toISOString()
+            };
+
+            await contractRef.update({
+                milestones,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error updating milestone:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Time Tracking Methods
+    async saveTimeLog(timeLogData) {
+        try {
+            const timeLog = {
+                ...timeLogData,
+                id: this.generateId(),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            const docRef = await this.db.collection('timeLogs').add(timeLog);
+            return { success: true, id: docRef.id, timeLog };
+        } catch (error) {
+            console.error('Error saving time log:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async getTimeLogs(projectId, freelancerId) {
+        try {
+            let query = this.db.collection('timeLogs');
+            
+            if (projectId) {
+                query = query.where('projectId', '==', projectId);
+            }
+            
+            if (freelancerId) {
+                query = query.where('freelancerId', '==', freelancerId);
+            }
+
+            const snapshot = await query.orderBy('startTime', 'desc').get();
+            const timeLogs = [];
+
+            snapshot.forEach(doc => {
+                timeLogs.push({
+                    id: doc.id,
+                    ...doc.data(),
+                    startTime: doc.data().startTime?.toDate()?.toISOString(),
+                    endTime: doc.data().endTime?.toDate()?.toISOString(),
+                    createdAt: doc.data().createdAt?.toDate()?.toISOString()
+                });
+            });
+
+            return { success: true, timeLogs };
+        } catch (error) {
+            console.error('Error fetching time logs:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Portfolio Management
+    async savePortfolioItem(portfolioData) {
+        try {
+            const portfolioItem = {
+                ...portfolioData,
+                id: this.generateId(),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            const docRef = await this.db.collection('portfolio').add(portfolioItem);
+            return { success: true, id: docRef.id, portfolioItem };
+        } catch (error) {
+            console.error('Error saving portfolio item:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async getPortfolio(freelancerId) {
+        try {
+            const snapshot = await this.db.collection('portfolio')
+                .where('freelancerId', '==', freelancerId)
+                .orderBy('createdAt', 'desc')
+                .get();
+
+            const portfolio = [];
+            snapshot.forEach(doc => {
+                portfolio.push({
+                    id: doc.id,
+                    ...doc.data(),
+                    createdAt: doc.data().createdAt?.toDate()?.toISOString(),
+                    updatedAt: doc.data().updatedAt?.toDate()?.toISOString()
+                });
+            });
+
+            return { success: true, portfolio };
+        } catch (error) {
+            console.error('Error fetching portfolio:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async deletePortfolioItem(itemId, freelancerId) {
+        try {
+            // Verify ownership
+            const doc = await this.db.collection('portfolio').doc(itemId).get();
+            if (!doc.exists || doc.data().freelancerId !== freelancerId) {
+                return { success: false, error: 'Portfolio item not found or unauthorized' };
+            }
+
+            await this.db.collection('portfolio').doc(itemId).delete();
+            return { success: true };
+        } catch (error) {
+            console.error('Error deleting portfolio item:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Advanced Notifications
+    async createNotification(notificationData) {
+        try {
+            const notification = {
+                ...notificationData,
+                id: this.generateId(),
+                read: false,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            const docRef = await this.db.collection('notifications').add(notification);
+            return { success: true, id: docRef.id, notification };
+        } catch (error) {
+            console.error('Error creating notification:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async getNotifications(userId, limit = 20) {
+        try {
+            const snapshot = await this.db.collection('notifications')
+                .where('userId', '==', userId)
+                .orderBy('createdAt', 'desc')
+                .limit(limit)
+                .get();
+
+            const notifications = [];
+            snapshot.forEach(doc => {
+                notifications.push({
+                    id: doc.id,
+                    ...doc.data(),
+                    createdAt: doc.data().createdAt?.toDate()?.toISOString()
+                });
+            });
+
+            return { success: true, notifications };
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async markNotificationRead(notificationId) {
+        try {
+            await this.db.collection('notifications').doc(notificationId).update({
+                read: true,
+                readAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            return { success: true };
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+            return { success: false, error: error.message };
         }
     }
 }

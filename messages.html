@@ -26,7 +26,17 @@
             </div>
             
             <div class="nav-actions" id="nav-actions">
-                <!-- Will be populated by JavaScript -->
+                <button class="theme-toggle" id="theme-toggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <div class="language-selector">
+                    <select id="language-select">
+                        <option value="en">EN</option>
+                        <option value="es">ES</option>
+                        <option value="fr">FR</option>
+                    </select>
+                </div>
+                <!-- User-specific content will be populated by JavaScript -->
             </div>
             
             <div class="nav-toggle" id="nav-toggle">
@@ -108,7 +118,7 @@
 
                 <!-- Message Input -->
                 <div class="message-input-area">
-                    <form id="message-form" onsubmit="messageApp.sendMessage(event)">
+                    <form id="message-form">
                         <div class="message-input-group">
                             <button type="button" class="attachment-btn" onclick="messageApp.showAttachmentOptions()">
                                 <i class="fas fa-paperclip"></i>
@@ -147,7 +157,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form id="new-message-form" onsubmit="messageApp.startNewConversation(event)">
+                <form id="new-message-form">
                     <div class="form-group">
                         <label class="form-label">To:</label>
                         <div class="user-search-container">
@@ -232,6 +242,9 @@
         </div>
     </div>
 
+    <!-- Main Modal Overlay (for talentSync.showModal) -->
+    <div id="modal-overlay" class="modal-overlay"></div>
+    
     <!-- Toast Notifications -->
     <div id="toast-container" class="toast-container"></div>
     

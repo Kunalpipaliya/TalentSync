@@ -29,6 +29,9 @@ class TalentSync {
         // Monitor connection status
         this.setupConnectionMonitoring();
 
+        // Always ensure demo users are available for testing
+        this.initializeDemoData();
+
         // Wait for Firebase to initialize, then load data
         if (typeof firebaseService !== 'undefined') {
             this.waitForFirebase();
@@ -231,41 +234,8 @@ class TalentSync {
             });
         }
 
-        // Navigation menu toggle
-        const navToggle = document.getElementById('nav-toggle');
-        const navMenu = document.getElementById('nav-menu');
-
-        if (navToggle && navMenu) {
-            navToggle.addEventListener('click', () => {
-                navMenu.classList.toggle('active');
-                navToggle.classList.toggle('active');
-
-                // Prevent body scroll when menu is open
-                if (navMenu.classList.contains('active')) {
-                    document.body.style.overflow = 'hidden';
-                } else {
-                    document.body.style.overflow = 'auto';
-                }
-            });
-
-            // Close menu when clicking on a link
-            navMenu.querySelectorAll('.nav-link').forEach(link => {
-                link.addEventListener('click', () => {
-                    navMenu.classList.remove('active');
-                    navToggle.classList.remove('active');
-                    document.body.style.overflow = 'auto';
-                });
-            });
-
-            // Close menu when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!navToggle.contains(e.target) && !navMenu.contains(e.target)) {
-                    navMenu.classList.remove('active');
-                    navToggle.classList.remove('active');
-                    document.body.style.overflow = 'auto';
-                }
-            });
-        }
+        // Enhanced mobile navigation with accessibility
+        this.setupMobileNavigation();
 
         // Search functionality
         const heroSearch = document.getElementById('hero-search');
@@ -276,6 +246,107 @@ class TalentSync {
                 }
             });
         }
+
+        // Keyboard navigation support
+        this.setupKeyboardNavigation();
+    }
+
+    setupMobileNavigation() {
+        const navToggle = document.getElementById('nav-toggle');
+        const navMenu = document.getElementById('nav-menu');
+
+        if (navToggle && navMenu) {
+            // Add ARIA attributes for accessibility
+            navToggle.setAttribute('aria-label', 'Toggle navigation menu');
+            navToggle.setAttribute('aria-expanded', 'false');
+            navToggle.setAttribute('aria-controls', 'nav-menu');
+            navMenu.setAttribute('aria-hidden', 'true');
+
+            navToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                const isActive = navMenu.classList.contains('active');
+                
+                navMenu.classList.toggle('active');
+                navToggle.classList.toggle('active');
+
+                // Update ARIA attributes
+                navToggle.setAttribute('aria-expanded', !isActive);
+                navMenu.setAttribute('aria-hidden', isActive);
+
+                // Prevent body scroll when menu is open
+                if (navMenu.classList.contains('active')) {
+                    document.body.style.overflow = 'hidden';
+                    // Focus first menu item for keyboard navigation
+                    const firstLink = navMenu.querySelector('.nav-link');
+                    if (firstLink) {
+                        setTimeout(() => firstLink.focus(), 100);
+                    }
+                } else {
+                    document.body.style.overflow = 'auto';
+                }
+            });
+
+            // Close menu when clicking on a link
+            navMenu.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    this.closeMobileMenu();
+                });
+            });
+
+            // Close menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!navToggle.contains(e.target) && !navMenu.contains(e.target)) {
+                    this.closeMobileMenu();
+                }
+            });
+
+            // Close menu on escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && navMenu.classList.contains('active')) {
+                    this.closeMobileMenu();
+                    navToggle.focus();
+                }
+            });
+        }
+    }
+
+    closeMobileMenu() {
+        const navToggle = document.getElementById('nav-toggle');
+        const navMenu = document.getElementById('nav-menu');
+        
+        if (navToggle && navMenu) {
+            navMenu.classList.remove('active');
+            navToggle.classList.remove('active');
+            navToggle.setAttribute('aria-expanded', 'false');
+            navMenu.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = 'auto';
+        }
+    }
+
+    setupKeyboardNavigation() {
+        // Tab trap for modals
+        document.addEventListener('keydown', (e) => {
+            const modal = document.querySelector('.modal-overlay.active .modal');
+            if (modal && e.key === 'Tab') {
+                const focusableElements = modal.querySelectorAll(
+                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                );
+                const firstElement = focusableElements[0];
+                const lastElement = focusableElements[focusableElements.length - 1];
+
+                if (e.shiftKey) {
+                    if (document.activeElement === firstElement) {
+                        lastElement.focus();
+                        e.preventDefault();
+                    }
+                } else {
+                    if (document.activeElement === lastElement) {
+                        firstElement.focus();
+                        e.preventDefault();
+                    }
+                }
+            }
+        });
     }
 
     // Theme Management
@@ -1133,20 +1204,31 @@ class TalentSync {
             return;
         }
 
+        // Update theme toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        if (themeToggle) {
+            themeToggle.onclick = () => this.toggleTheme();
+        }
+
+        // Update language selector
+        const languageSelect = document.getElementById('language-select');
+        if (languageSelect) {
+            languageSelect.onchange = (e) => this.changeLanguage(e.target.value);
+            languageSelect.value = this.currentLanguage;
+        }
+
         if (this.currentUser) {
-            navbar.innerHTML = `
+            // Remove login/signup buttons if they exist
+            const loginBtn = document.getElementById('login-btn');
+            const signupBtn = document.getElementById('signup-btn');
+            if (loginBtn) loginBtn.remove();
+            if (signupBtn) signupBtn.remove();
+
+            // Add user-specific elements
+            const userElements = document.createElement('div');
+            userElements.innerHTML = `
                 <div class="connection-status" id="connection-status" title="Connection Status">
                     <i class="fas fa-circle ${this.isOnline ? 'online' : 'offline'}"></i>
-                </div>
-                <button class="theme-toggle" id="theme-toggle" onclick="talentSync.toggleTheme()">
-                    <i class="fas fa-moon"></i>
-                </button>
-                <div class="language-selector">
-                    <select id="language-select" onchange="talentSync.changeLanguage(this.value)">
-                        <option value="en">EN</option>
-                        <option value="es">ES</option>
-                        <option value="fr">FR</option>
-                    </select>
                 </div>
                 <button class="btn btn-outline" onclick="talentSync.showNotifications()">
                     <i class="fas fa-bell"></i>
@@ -1201,34 +1283,41 @@ class TalentSync {
                     </div>
                 </div>
             `;
+
+            // Append user elements to navbar
+            navbar.appendChild(userElements);
         } else {
-            navbar.innerHTML = `
-                <div class="connection-status" id="connection-status" title="Connection Status">
-                    <i class="fas fa-circle ${this.isOnline ? 'online' : 'offline'}"></i>
-                </div>
-                <button class="theme-toggle" id="theme-toggle" onclick="talentSync.toggleTheme()">
-                    <i class="fas fa-moon"></i>
-                </button>
-                <div class="language-selector">
-                    <select id="language-select" onchange="talentSync.changeLanguage(this.value)">
-                        <option value="en">EN</option>
-                        <option value="es">ES</option>
-                        <option value="fr">FR</option>
-                    </select>
-                </div>
-                <button class="btn btn-outline" id="login-btn" onclick="talentSync.showLoginModal()">Log In</button>
-                <button class="btn btn-primary" id="signup-btn" onclick="talentSync.showSignupModal()">Sign Up</button>
-            `;
+            // Remove user elements if they exist
+            const connectionStatus = document.getElementById('connection-status');
+            const userMenu = document.querySelector('.user-menu');
+            const notificationBtn = document.querySelector('.btn[onclick*="showNotifications"]');
+            
+            if (connectionStatus) connectionStatus.remove();
+            if (userMenu) userMenu.remove();
+            if (notificationBtn) notificationBtn.remove();
+
+            // Add login/signup buttons if they don't exist
+            if (!document.getElementById('login-btn')) {
+                const loginBtn = document.createElement('button');
+                loginBtn.className = 'btn btn-outline';
+                loginBtn.id = 'login-btn';
+                loginBtn.textContent = 'Log In';
+                loginBtn.onclick = () => this.showLoginModal();
+                navbar.appendChild(loginBtn);
+            }
+
+            if (!document.getElementById('signup-btn')) {
+                const signupBtn = document.createElement('button');
+                signupBtn.className = 'btn btn-primary';
+                signupBtn.id = 'signup-btn';
+                signupBtn.textContent = 'Sign Up';
+                signupBtn.onclick = () => this.showSignupModal();
+                navbar.appendChild(signupBtn);
+            }
         }
 
         // Reload theme after UI update
         this.loadTheme();
-
-        // Update language select
-        const languageSelect = document.getElementById('language-select');
-        if (languageSelect) {
-            languageSelect.value = this.currentLanguage;
-        }
     }
 
     // Navigation
@@ -1429,43 +1518,123 @@ class TalentSync {
         const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
 
         if (existingUsers.length === 0) {
-            const demoUsers = [
-                {
-                    id: 1,
-                    fullName: 'John Client',
-                    email: 'client@demo.com',
-                    password: 'password123',
-                    role: 'client',
-                    createdAt: new Date().toISOString(),
-                    profile: {
-                        bio: 'Startup founder looking for talented developers',
-                        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-                        completedJobs: 15,
-                        rating: 4.8,
-                        reviews: []
-                    }
-                },
-                {
-                    id: 2,
-                    fullName: 'Jane Freelancer',
-                    email: 'freelancer@demo.com',
-                    password: 'password123',
-                    role: 'freelancer',
-                    createdAt: new Date().toISOString(),
-                    profile: {
-                        bio: 'Full-stack developer with 5+ years experience',
-                        skills: ['JavaScript', 'React', 'Node.js', 'Python'],
-                        hourlyRate: 75,
-                        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-                        completedJobs: 89,
-                        rating: 4.9,
-                        reviews: []
-                    }
-                }
-            ];
-
-            localStorage.setItem('users', JSON.stringify(demoUsers));
+            this.createDemoUsers();
         }
+    }
+
+    // Create demo users for testing
+    createDemoUsers() {
+        const demoUsers = [
+            {
+                id: 1,
+                uid: 'demo-client-1',
+                fullName: 'John Client',
+                email: 'client@demo.com',
+                password: 'password123',
+                role: 'client',
+                createdAt: new Date().toISOString(),
+                profile: {
+                    bio: 'Startup founder looking for talented developers',
+                    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+                    completedJobs: 15,
+                    rating: 4.8,
+                    reviews: [],
+                    totalEarnings: 0,
+                    monthEarnings: 0,
+                    pendingEarnings: 0,
+                    activeProjects: 0,
+                    totalSpent: 25000,
+                    postedJobs: 8,
+                    hiredFreelancers: 12
+                }
+            },
+            {
+                id: 2,
+                uid: 'demo-freelancer-1',
+                fullName: 'Jane Freelancer',
+                email: 'freelancer@demo.com',
+                password: 'password123',
+                role: 'freelancer',
+                createdAt: new Date().toISOString(),
+                profile: {
+                    bio: 'Full-stack developer with 5+ years experience',
+                    skills: ['JavaScript', 'React', 'Node.js', 'Python'],
+                    hourlyRate: 75,
+                    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+                    completedJobs: 89,
+                    rating: 4.9,
+                    reviews: [],
+                    totalEarnings: 45000,
+                    monthEarnings: 3500,
+                    pendingEarnings: 1200,
+                    activeProjects: 3,
+                    totalSpent: 0,
+                    postedJobs: 0,
+                    hiredFreelancers: 0
+                }
+            },
+            {
+                id: 3,
+                uid: 'demo-client-2',
+                fullName: 'Mike Business',
+                email: 'mike@business.com',
+                password: 'password123',
+                role: 'client',
+                createdAt: new Date().toISOString(),
+                profile: {
+                    bio: 'Small business owner needing digital solutions',
+                    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+                    completedJobs: 8,
+                    rating: 4.6,
+                    reviews: [],
+                    totalEarnings: 0,
+                    monthEarnings: 0,
+                    pendingEarnings: 0,
+                    activeProjects: 0,
+                    totalSpent: 12000,
+                    postedJobs: 5,
+                    hiredFreelancers: 6
+                }
+            },
+            {
+                id: 4,
+                uid: 'demo-freelancer-2',
+                fullName: 'Sarah Designer',
+                email: 'sarah@design.com',
+                password: 'password123',
+                role: 'freelancer',
+                createdAt: new Date().toISOString(),
+                profile: {
+                    bio: 'Creative UI/UX designer with passion for user experience',
+                    skills: ['UI/UX Design', 'Figma', 'Adobe XD', 'Prototyping'],
+                    hourlyRate: 65,
+                    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+                    completedJobs: 67,
+                    rating: 4.8,
+                    reviews: [],
+                    totalEarnings: 32000,
+                    monthEarnings: 2800,
+                    pendingEarnings: 800,
+                    activeProjects: 2,
+                    totalSpent: 0,
+                    postedJobs: 0,
+                    hiredFreelancers: 0
+                }
+            }
+        ];
+
+        localStorage.setItem('users', JSON.stringify(demoUsers));
+        console.log('Demo users created:', demoUsers.length);
+        return demoUsers;
+    }
+
+    // Get demo users for testing
+    getDemoUsers() {
+        let users = JSON.parse(localStorage.getItem('users') || '[]');
+        if (users.length === 0) {
+            users = this.createDemoUsers();
+        }
+        return users;
     }
 
     // Search and Browse Functions
