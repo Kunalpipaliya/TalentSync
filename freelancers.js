@@ -32,6 +32,12 @@ class FreelancerBrowser {
             }, 500);
             
             this.setupEventListeners();
+            
+            // Listen for user loaded event to re-render with correct buttons
+            window.addEventListener('userLoaded', () => {
+                console.log('User loaded, re-rendering freelancers with correct role buttons');
+                this.displayFreelancers();
+            });
         } else {
             console.log('FreelancerBrowser: Waiting for TalentSync and Firebase...');
             // Retry after a short delay
@@ -532,7 +538,7 @@ class FreelancerBrowser {
 
     createFreelancerCard(freelancer) {
         return `
-            <div class="freelancer-card" onclick="freelancerBrowser.showFreelancerProfile(${freelancer.id})">
+            <div class="freelancer-card" onclick="freelancerBrowser.showFreelancerProfile('${freelancer.id}')">>
                 <div class="availability-badge ${freelancer.availability}">
                     ${freelancer.availability === 'available' ? 'Available' : 'Busy'}
                 </div>
@@ -587,14 +593,14 @@ class FreelancerBrowser {
                 </div>
                 
                 <div class="freelancer-actions">
-                    <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); freelancerBrowser.saveFreelancer(${freelancer.id})">
+                    <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); freelancerBrowser.saveFreelancer('${freelancer.id}')">
                         <i class="fas fa-heart"></i> Save
                     </button>
                     ${talentSync.currentUser && talentSync.currentUser.role === 'client' ? 
-                        `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); freelancerBrowser.showHireModal(${freelancer.id})">
+                        `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); freelancerBrowser.showHireModal('${freelancer.id}')">
                             <i class="fas fa-handshake"></i> Hire
                         </button>` : 
-                        `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); freelancerBrowser.showFreelancerProfile(${freelancer.id})">
+                        `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); freelancerBrowser.showFreelancerProfile('${freelancer.id}')">
                             View Profile
                         </button>`
                     }
@@ -685,7 +691,7 @@ class FreelancerBrowser {
     }
 
     showFreelancerProfile(freelancerId) {
-        const freelancer = this.freelancers.find(f => f.id === freelancerId);
+        const freelancer = this.freelancers.find(f => f.id == freelancerId);
         if (!freelancer) return;
 
         const modalContent = `
@@ -787,10 +793,10 @@ class FreelancerBrowser {
                     
                     ${talentSync.currentUser && talentSync.currentUser.role === 'client' ? `
                         <div style="text-align: center;">
-                            <button class="btn btn-primary" onclick="freelancerBrowser.showHireModal(${freelancer.id})" style="width: 100%; margin-bottom: 1rem;">
+                            <button class="btn btn-primary" onclick="freelancerBrowser.showHireModal('${freelancer.id}')" style="width: 100%; margin-bottom: 1rem;">
                                 <i class="fas fa-handshake"></i> Hire ${freelancer.name.split(' ')[0]}
                             </button>
-                            <button class="btn btn-outline" onclick="freelancerBrowser.contactFreelancer(${freelancer.id})" style="width: 100%;">
+                            <button class="btn btn-outline" onclick="freelancerBrowser.contactFreelancer('${freelancer.id}')" style="width: 100%;">
                                 <i class="fas fa-envelope"></i> Send Message
                             </button>
                         </div>
@@ -843,6 +849,13 @@ class FreelancerBrowser {
         }
 
         const formData = new FormData(event.target);
+        const freelancer = this.freelancers.find(f => f.id == this.currentFreelancerId);
+        
+        if (!freelancer) {
+            talentSync.showToast('Freelancer not found', 'error');
+            return;
+        }
+        
         const hireRequest = {
             id: Date.now(),
             freelancerId: this.currentFreelancerId,
@@ -863,6 +876,42 @@ class FreelancerBrowser {
         const hireRequests = JSON.parse(localStorage.getItem('hireRequests') || '[]');
         hireRequests.push(hireRequest);
         localStorage.setItem('hireRequests', JSON.stringify(hireRequests));
+
+        // Send message to freelancer
+        const messageText = `Hi! I'd like to hire you for: ${hireRequest.projectTitle}\n\n${hireRequest.projectDescription}\n\nBudget: $${hireRequest.budgetAmount} (${hireRequest.budgetType})\nDuration: ${hireRequest.projectDuration}\n\n${hireRequest.message || ''}`;
+        
+        const message = {
+            conversationId: `${talentSync.currentUser.id}_${freelancer.uid || this.currentFreelancerId}`,
+            senderId: talentSync.currentUser.id,
+            senderName: talentSync.currentUser.fullName,
+            senderAvatar: talentSync.currentUser.profile.avatar,
+            receiverId: freelancer.uid || this.currentFreelancerId,
+            receiverName: freelancer.name,
+            receiverAvatar: freelancer.avatar,
+            message: messageText,
+            timestamp: new Date().toISOString(),
+            read: false
+        };
+
+        // Store message in Firestore
+        console.log('Freelancer data:', { id: freelancer.id, uid: freelancer.uid, name: freelancer.name });
+        console.log('Receiver ID:', freelancer.uid || this.currentFreelancerId);
+        console.log('Message to send:', message);
+        
+        if (firebaseService && firebaseService.db) {
+            console.log('Firebase service available, sending message...');
+            firebaseService.saveMessage(message).then(result => {
+                if (result.success) {
+                    console.log('✓ Message sent successfully to Firestore with ID:', result.id);
+                } else {
+                    console.error('✗ Failed to send message:', result.error);
+                }
+            }).catch(error => {
+                console.error('✗ Error sending message:', error);
+            });
+        } else {
+            console.error('✗ Firebase not available, message not sent');
+        }
 
         this.closeHireModal();
         talentSync.showToast('Hire request sent successfully!', 'success');

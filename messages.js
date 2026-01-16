@@ -31,7 +31,7 @@ class MessageApp {
                 console.log('Messages: User authenticated, initializing messages');
                 this.setupNavigation();
                 this.loadUsers();
-                this.generateDemoConversations();
+                await this.loadMessagesFromFirestore();
                 this.setupEventListeners();
                 this.loadConversations();
                 return;
@@ -272,9 +272,12 @@ class MessageApp {
         if (storedFreelancers) {
             const freelancers = JSON.parse(storedFreelancers);
             freelancers.forEach(freelancer => {
-                if (!this.users.find(u => u.id === freelancer.id)) {
+                // Add freelancer to users list if not already there
+                const existingUser = this.users.find(u => u.id == freelancer.id || u.uid == freelancer.id);
+                if (!existingUser) {
                     this.users.push({
                         id: freelancer.id,
+                        uid: freelancer.uid || freelancer.id,
                         fullName: freelancer.name,
                         email: `${freelancer.name.toLowerCase().replace(' ', '.')}@example.com`,
                         role: 'freelancer',
@@ -286,6 +289,126 @@ class MessageApp {
                     });
                 }
             });
+        }
+        
+        console.log('Messages: Loaded users:', this.users.length);
+    }
+
+    async loadMessagesFromFirestore() {
+        console.log('Messages: Loading messages from Firestore...');
+        
+        if (!firebaseService || !firebaseService.db) {
+            console.log('Messages: Firebase not available, using demo data');
+            this.generateDemoConversations();
+            return;
+        }
+
+        try {
+            const currentUserId = talentSync.currentUser.uid || talentSync.currentUser.id;
+            console.log('Messages: Loading messages for user:', currentUserId);
+            
+            const result = await firebaseService.loadMessages(currentUserId);
+            
+            if (result.success && result.data && result.data.length > 0) {
+                console.log(`Messages: Loaded ${result.data.length} messages from Firestore`);
+                
+                // Group messages by conversation
+                const conversationsMap = new Map();
+                
+                result.data.forEach(msg => {
+                    const convId = msg.conversationId;
+                    
+                    if (!conversationsMap.has(convId)) {
+                        // Extract participant IDs from conversationId
+                        const participants = convId.split('_').filter(id => id);
+                        
+                        conversationsMap.set(convId, {
+                            id: convId,
+                            participants: participants,
+                            messages: [],
+                            lastActivity: msg.timestamp,
+                            unreadCount: 0
+                        });
+                    }
+                    
+                    const conversation = conversationsMap.get(convId);
+                    
+                    // Add sender info to message if not in users list
+                    const sender = this.users.find(u => u.id == msg.senderId || u.uid == msg.senderId);
+                    if (!sender && msg.senderName) {
+                        // Add sender to users list
+                        this.users.push({
+                            id: msg.senderId,
+                            uid: msg.senderId,
+                            fullName: msg.senderName,
+                            email: 'user@example.com',
+                            role: 'user',
+                            profile: {
+                                avatar: msg.senderAvatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+                                bio: ''
+                            }
+                        });
+                    }
+                    
+                    // Add receiver info to message if not in users list
+                    const receiver = this.users.find(u => u.id == msg.receiverId || u.uid == msg.receiverId);
+                    if (!receiver && msg.receiverName) {
+                        // Add receiver to users list
+                        this.users.push({
+                            id: msg.receiverId,
+                            uid: msg.receiverId,
+                            fullName: msg.receiverName,
+                            email: 'user@example.com',
+                            role: 'user',
+                            profile: {
+                                avatar: msg.receiverAvatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+                                bio: ''
+                            }
+                        });
+                    }
+                    
+                    conversation.messages.push({
+                        id: msg.id,
+                        senderId: msg.senderId,
+                        content: msg.message,
+                        timestamp: msg.timestamp,
+                        read: msg.read
+                    });
+                    
+                    // Update last activity
+                    if (new Date(msg.timestamp) > new Date(conversation.lastActivity)) {
+                        conversation.lastActivity = msg.timestamp;
+                    }
+                    
+                    // Count unread messages
+                    if (msg.senderId != currentUserId && !msg.read) {
+                        conversation.unreadCount++;
+                    }
+                });
+                
+                // Convert map to array and sort messages
+                this.conversations = Array.from(conversationsMap.values()).map(conv => {
+                    conv.messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    return conv;
+                });
+                
+                console.log(`Messages: Created ${this.conversations.length} conversations`);
+            } else {
+                console.log('Messages: No messages found in Firestore, using demo data');
+                this.generateDemoConversations();
+            }
+        } catch (error) {
+            console.error('Messages: Error loading messages from Firestore:', error);
+            this.generateDemoConversations();
+        }
+    }
+            } else {
+                console.log('Messages: No messages found in Firestore, using demo data');
+                this.generateDemoConversations();
+            }
+        } catch (error) {
+            console.error('Messages: Error loading messages from Firestore:', error);
+            this.generateDemoConversations();
         }
     }
 
@@ -461,15 +584,12 @@ class MessageApp {
 
     getOtherParticipant(conversation) {
         const currentUserId = talentSync.currentUser.uid || talentSync.currentUser.id;
-        const otherParticipantId = conversation.participants.find(id => id !== currentUserId);
+        const otherParticipantId = conversation.participants.find(id => id != currentUserId);
         
-        // Try to find user by both id and uid
-        let otherUser = this.users.find(u => u.id === otherParticipantId || u.uid === otherParticipantId);
+        // Try to find user by both id and uid using loose equality
+        let otherUser = this.users.find(u => u.id == otherParticipantId || u.uid == otherParticipantId);
         
         if (!otherUser) {
-            console.log('Messages: Could not find other participant with ID:', otherParticipantId);
-            console.log('Messages: Available users:', this.users.map(u => ({ id: u.id, uid: u.uid, name: u.fullName })));
-            
             // Return a placeholder user
             otherUser = {
                 id: otherParticipantId,

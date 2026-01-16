@@ -1014,6 +1014,69 @@ class FirebaseService {
             return { success: false, error: error.message };
         }
     }
+
+    // Message Methods
+    async saveMessage(messageData) {
+        try {
+            console.log('Saving message to Firestore:', messageData);
+            
+            const message = {
+                ...messageData,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            const docRef = await this.db.collection('messages').add(message);
+            console.log('Message saved with ID:', docRef.id);
+            
+            return { success: true, id: docRef.id, message };
+        } catch (error) {
+            console.error('Error saving message:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async loadMessages(userId) {
+        try {
+            console.log('Loading messages for user:', userId);
+            
+            // Get messages where user is sender or receiver
+            const sentSnapshot = await this.db.collection('messages')
+                .where('senderId', '==', userId)
+                .get();
+            
+            const receivedSnapshot = await this.db.collection('messages')
+                .where('receiverId', '==', userId)
+                .get();
+
+            const messages = [];
+            
+            sentSnapshot.forEach(doc => {
+                messages.push({
+                    id: doc.id,
+                    ...doc.data(),
+                    timestamp: doc.data().timestamp || doc.data().createdAt?.toDate()?.toISOString()
+                });
+            });
+            
+            receivedSnapshot.forEach(doc => {
+                messages.push({
+                    id: doc.id,
+                    ...doc.data(),
+                    timestamp: doc.data().timestamp || doc.data().createdAt?.toDate()?.toISOString()
+                });
+            });
+
+            // Sort by timestamp
+            messages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            console.log(`Loaded ${messages.length} messages from Firestore`);
+            return { success: true, data: messages };
+        } catch (error) {
+            console.error('Error loading messages:', error);
+            return { success: false, error: error.message };
+        }
+    }
 }
 
 // Initialize Firebase service

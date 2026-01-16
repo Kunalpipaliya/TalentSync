@@ -41,6 +41,44 @@ class TalentSync {
         }
 
         this.updateUI();
+        
+        // Handle window resize for responsive navigation
+        window.addEventListener('resize', () => {
+            this.handleResize();
+        });
+        
+        // Initial setup for mobile navigation
+        this.handleResize();
+    }
+
+    handleResize() {
+        const isMobile = window.innerWidth <= 768;
+        const navActions = document.getElementById('nav-actions');
+        const navMenu = document.getElementById('nav-menu');
+        
+        if (isMobile) {
+            // Hide original nav-actions on mobile
+            if (navActions) {
+                navActions.style.display = 'none';
+            }
+            // Setup mobile navigation will be called when menu opens
+        } else {
+            // Desktop view
+            if (navActions) {
+                navActions.style.display = 'flex';
+            }
+            
+            // Remove mobile actions container
+            if (navMenu) {
+                const mobileActionsContainer = navMenu.querySelector('.mobile-nav-actions');
+                if (mobileActionsContainer) {
+                    mobileActionsContainer.remove();
+                }
+            }
+            
+            // Close mobile menu if open
+            this.closeMobileMenu();
+        }
     }
 
     setupConnectionMonitoring() {
@@ -206,12 +244,6 @@ class TalentSync {
             themeToggle.addEventListener('click', () => this.toggleTheme());
         }
 
-        // Language selector
-        const languageSelect = document.getElementById('language-select');
-        if (languageSelect) {
-            languageSelect.addEventListener('change', (e) => this.changeLanguage(e.target.value));
-        }
-
         // Navigation buttons
         const loginBtn = document.getElementById('login-btn');
         const signupBtn = document.getElementById('signup-btn');
@@ -256,26 +288,41 @@ class TalentSync {
         const navMenu = document.getElementById('nav-menu');
 
         if (navToggle && navMenu) {
+            // Remove existing event listeners by cloning and replacing
+            const newNavToggle = navToggle.cloneNode(true);
+            navToggle.parentNode.replaceChild(newNavToggle, navToggle);
+            
             // Add ARIA attributes for accessibility
-            navToggle.setAttribute('aria-label', 'Toggle navigation menu');
-            navToggle.setAttribute('aria-expanded', 'false');
-            navToggle.setAttribute('aria-controls', 'nav-menu');
+            newNavToggle.setAttribute('aria-label', 'Toggle navigation menu');
+            newNavToggle.setAttribute('aria-expanded', 'false');
+            newNavToggle.setAttribute('aria-controls', 'nav-menu');
             navMenu.setAttribute('aria-hidden', 'true');
 
-            navToggle.addEventListener('click', (e) => {
+            // Add click handler to hamburger button (works as both open and close)
+            newNavToggle.addEventListener('click', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 const isActive = navMenu.classList.contains('active');
                 
                 navMenu.classList.toggle('active');
-                navToggle.classList.toggle('active');
+                newNavToggle.classList.toggle('active');
 
                 // Update ARIA attributes
-                navToggle.setAttribute('aria-expanded', !isActive);
+                newNavToggle.setAttribute('aria-expanded', !isActive);
                 navMenu.setAttribute('aria-hidden', isActive);
+
+                // Update aria-label based on state
+                if (!isActive) {
+                    newNavToggle.setAttribute('aria-label', 'Close navigation menu');
+                } else {
+                    newNavToggle.setAttribute('aria-label', 'Open navigation menu');
+                }
 
                 // Prevent body scroll when menu is open
                 if (navMenu.classList.contains('active')) {
                     document.body.style.overflow = 'hidden';
+                    // Setup mobile nav actions when menu opens
+                    this.setupMobileNavActions();
                     // Focus first menu item for keyboard navigation
                     const firstLink = navMenu.querySelector('.nav-link');
                     if (firstLink) {
@@ -295,7 +342,8 @@ class TalentSync {
 
             // Close menu when clicking outside
             document.addEventListener('click', (e) => {
-                if (!navToggle.contains(e.target) && !navMenu.contains(e.target)) {
+                const currentNavToggle = document.getElementById('nav-toggle');
+                if (currentNavToggle && !currentNavToggle.contains(e.target) && !navMenu.contains(e.target)) {
                     this.closeMobileMenu();
                 }
             });
@@ -304,8 +352,80 @@ class TalentSync {
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' && navMenu.classList.contains('active')) {
                     this.closeMobileMenu();
-                    navToggle.focus();
+                    const currentNavToggle = document.getElementById('nav-toggle');
+                    if (currentNavToggle) currentNavToggle.focus();
                 }
+            });
+        }
+    }
+
+    setupMobileNavActions() {
+        const navMenu = document.getElementById('nav-menu');
+        const navActions = document.getElementById('nav-actions');
+        
+        if (navMenu && navActions) {
+            // Check if mobile actions container already exists
+            let mobileActionsContainer = navMenu.querySelector('.mobile-nav-actions');
+            
+            if (!mobileActionsContainer) {
+                // Create mobile actions container
+                mobileActionsContainer = document.createElement('div');
+                mobileActionsContainer.className = 'mobile-nav-actions';
+                
+                // Clone nav-actions content (deep clone to get all children)
+                const actionsClone = navActions.cloneNode(true);
+                actionsClone.id = 'mobile-nav-actions';
+                actionsClone.style.display = 'flex !important';
+                actionsClone.style.flexDirection = 'column';
+                actionsClone.style.gap = '0.75rem';
+                actionsClone.style.width = '100%';
+                
+                // Append cloned actions to mobile container
+                mobileActionsContainer.appendChild(actionsClone);
+                
+                // Append to nav-menu
+                navMenu.appendChild(mobileActionsContainer);
+                
+                // Re-attach event listeners for cloned elements
+                this.attachMobileActionListeners(actionsClone);
+            }
+        }
+    }
+
+    attachMobileActionListeners(actionsContainer) {
+        // Theme toggle
+        const themeToggle = actionsContainer.querySelector('#theme-toggle');
+        if (themeToggle) {
+            themeToggle.id = 'mobile-theme-toggle';
+            themeToggle.addEventListener('click', () => this.toggleTheme());
+        }
+
+        // Login button
+        const loginBtn = actionsContainer.querySelector('#login-btn');
+        if (loginBtn) {
+            loginBtn.id = 'mobile-login-btn';
+            loginBtn.addEventListener('click', () => {
+                this.closeMobileMenu();
+                this.showLoginModal();
+            });
+        }
+
+        // Signup button
+        const signupBtn = actionsContainer.querySelector('#signup-btn');
+        if (signupBtn) {
+            signupBtn.id = 'mobile-signup-btn';
+            signupBtn.addEventListener('click', () => {
+                this.closeMobileMenu();
+                this.showSignupModal();
+            });
+        }
+
+        // User menu (if logged in)
+        const userAvatar = actionsContainer.querySelector('.user-avatar');
+        if (userAvatar) {
+            userAvatar.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleUserDropdown();
             });
         }
     }
@@ -1224,20 +1344,20 @@ class TalentSync {
             if (loginBtn) loginBtn.remove();
             if (signupBtn) signupBtn.remove();
 
+            // Remove existing user menu if it exists (prevent duplicates)
+            const existingUserMenu = navbar.querySelector('.user-menu');
+            if (existingUserMenu) existingUserMenu.remove();
+
             // Add user-specific elements
             const userElements = document.createElement('div');
             userElements.innerHTML = `
-                <div class="connection-status" id="connection-status" title="Connection Status">
-                    <i class="fas fa-circle ${this.isOnline ? 'online' : 'offline'}"></i>
-                </div>
-                <button class="btn btn-outline" onclick="talentSync.showNotifications()">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-count">3</span>
-                </button>
                 <div class="user-menu">
-                    <div class="user-avatar" onclick="talentSync.toggleUserMenu()">
-                        <img src="${this.currentUser.profile.avatar}" alt="${this.currentUser.fullName}">
-                        <div class="online-indicator"></div>
+                    <div class="user-info-display">
+                        <span class="user-name-display">${this.currentUser.fullName || 'User'}</span>
+                        <div class="user-avatar" onclick="talentSync.toggleUserMenu()">
+                            <img src="${this.currentUser.profile.avatar}" alt="${this.currentUser.fullName}">
+                            <div class="online-indicator"></div>
+                        </div>
                     </div>
                     <div class="user-dropdown" id="user-dropdown">
                         <div class="dropdown-header">
@@ -1288,13 +1408,9 @@ class TalentSync {
             navbar.appendChild(userElements);
         } else {
             // Remove user elements if they exist
-            const connectionStatus = document.getElementById('connection-status');
             const userMenu = document.querySelector('.user-menu');
-            const notificationBtn = document.querySelector('.btn[onclick*="showNotifications"]');
             
-            if (connectionStatus) connectionStatus.remove();
             if (userMenu) userMenu.remove();
-            if (notificationBtn) notificationBtn.remove();
 
             // Add login/signup buttons if they don't exist
             if (!document.getElementById('login-btn')) {

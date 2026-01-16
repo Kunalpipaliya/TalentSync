@@ -29,13 +29,6 @@
                 <button class="theme-toggle" id="theme-toggle">
                     <i class="fas fa-moon"></i>
                 </button>
-                <div class="language-selector">
-                    <select id="language-select">
-                        <option value="en">EN</option>
-                        <option value="es">ES</option>
-                        <option value="fr">FR</option>
-                    </select>
-                </div>
                 <!-- User-specific content will be populated by JavaScript -->
             </div>
             
@@ -49,8 +42,16 @@
 
     <!-- Dashboard Container -->
     <div class="dashboard-container">
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+        
+        <!-- Mobile Sidebar Toggle Button -->
+        <button class="mobile-sidebar-toggle" id="mobile-sidebar-toggle" style="display: none;">
+            <i class="fas fa-bars"></i>
+        </button>
+        
         <!-- Sidebar -->
-        <aside class="dashboard-sidebar">
+        <aside class="dashboard-sidebar" id="dashboard-sidebar">
             <div class="sidebar-header">
                 <div class="user-info">
                     <div class="user-avatar">

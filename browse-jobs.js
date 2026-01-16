@@ -33,6 +33,12 @@ class JobBrowser {
             
             this.populateCategories();
             this.setupEventListeners();
+            
+            // Listen for user loaded event to re-render with correct buttons
+            window.addEventListener('userLoaded', () => {
+                console.log('User loaded, re-rendering jobs with correct role buttons');
+                this.displayJobs();
+            });
         } else {
             console.log('JobBrowser: Waiting for TalentSync and Firebase...');
             // Retry after a short delay
@@ -851,6 +857,8 @@ class JobBrowser {
         }
 
         const formData = new FormData(event.target);
+        const job = this.jobs.find(j => j.id === this.currentJobId);
+        
         const proposal = {
             id: Date.now(),
             jobId: this.currentJobId,
@@ -871,10 +879,41 @@ class JobBrowser {
         localStorage.setItem('proposals', JSON.stringify(proposals));
 
         // Update job proposals count
-        const job = this.jobs.find(j => j.id === this.currentJobId);
         if (job) {
             job.proposals++;
             localStorage.setItem('jobs', JSON.stringify(this.jobs));
+        }
+
+        // Send message to client
+        const messageText = `Hi! I'd like to apply for your job: ${job.title}\n\nMy Proposal:\n${proposal.coverLetter}\n\nBid Amount: $${proposal.bidAmount}\nDelivery Time: ${proposal.deliveryTime}\n\n${proposal.questions ? 'Questions: ' + proposal.questions : ''}`;
+        
+        const message = {
+            conversationId: `${talentSync.currentUser.id}_${job.client.id}`,
+            senderId: talentSync.currentUser.id,
+            senderName: talentSync.currentUser.fullName,
+            senderAvatar: talentSync.currentUser.profile.avatar,
+            receiverId: job.client.id,
+            receiverName: job.client.name,
+            receiverAvatar: job.client.avatar,
+            message: messageText,
+            timestamp: new Date().toISOString(),
+            read: false
+        };
+
+        // Store message in Firestore
+        if (firebaseService && firebaseService.db) {
+            console.log('Sending proposal message to Firestore for client:', job.client.id);
+            firebaseService.saveMessage(message).then(result => {
+                if (result.success) {
+                    console.log('Message sent successfully to Firestore');
+                } else {
+                    console.error('Failed to send message:', result.error);
+                }
+            }).catch(error => {
+                console.error('Error sending message:', error);
+            });
+        } else {
+            console.warn('Firebase not available, message not sent');
         }
 
         this.closeProposalModal();
