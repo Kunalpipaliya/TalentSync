@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Freelancers - TalentSync</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="freelancers.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-handshake"></i>
+                <span>TalentSync</span>
+            </div>
+            
+            <div class="nav-menu" id="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="browse-jobs.html" class="nav-link">Browse Jobs</a>
+                <a href="freelancers.html" class="nav-link active">Find Talent</a>
+                <a href="messages.html" class="nav-link">Messages</a>
+            </div>
+            
+            <div class="nav-actions" id="nav-actions">
+                <button class="theme-toggle" id="theme-toggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <!-- User-specific content will be populated by JavaScript -->
+            </div>
+            
+            <div class="nav-toggle" id="nav-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Hero Section -->
+        <section class="freelancers-hero">
+            <div class="container">
+                <h1>Find Top Freelancers</h1>
+                <p>Discover talented professionals ready to bring your projects to life</p>
+                
+                <!-- Search Bar -->
+                <div class="search-section">
+                    <div class="search-bar">
+                        <div class="search-input-group">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="freelancer-search" placeholder="Search by skills, name, or expertise...">
+                        </div>
+                        <div class="category-select-group">
+                            <i class="fas fa-layer-group"></i>
+                            <select id="category-select">
+                                <option value="">All Categories</option>
+                                <option value="web-development">Web Development</option>
+                                <option value="mobile-development">Mobile Development</option>
+                                <option value="design">Design & Creative</option>
+                                <option value="writing">Writing & Content</option>
+                                <option value="marketing">Digital Marketing</option>
+                                <option value="data-science">Data Science</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary search-btn" onclick="freelancerBrowser.performSearch()">
+                            Search Talent
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Freelancers Content -->
+        <section class="freelancers-content">
+            <div class="container">
+                <div class="freelancers-layout">
+                    <!-- Sidebar Filters -->
+                    <aside class="freelancers-sidebar">
+                        <div class="filter-section">
+                            <h3>Filters</h3>
+                            <button class="btn btn-outline btn-sm" onclick="freelancerBrowser.clearFilters()">
+                                Clear All
+                            </button>
+                        </div>
+
+                        <!-- Hourly Rate Filter -->
+                        <div class="filter-group">
+                            <h4>Hourly Rate</h4>
+                            <div class="filter-options">
+                                <label class="filter-option">
+                                    <input type="checkbox" name="rate" value="0-25">
+                                    <span>$0 - $25/hr</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="rate" value="25-50">
+                                    <span>$25 - $50/hr</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="rate" value="50-100">
+                                    <span>$50 - $100/hr</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="rate" value="100+">
+                                    <span>$100+/hr</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Experience Level -->
+                        <div class="filter-group">
+                            <h4>Experience Level</h4>
+                            <div class="filter-options">
+                                <label class="filter-option">
+                                    <input type="checkbox" name="experience" value="entry">
+                                    <span>Entry Level (0-2 years)</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="experience" value="intermediate">
+                                    <span>Intermediate (2-5 years)</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="experience" value="expert">
+                                    <span>Expert (5+ years)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Rating Filter -->
+                        <div class="filter-group">
+                            <h4>Rating</h4>
+                            <div class="filter-options">
+                                <label class="filter-option">
+                                    <input type="checkbox" name="rating" value="4.5+">
+                                    <span>4.5+ stars</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="rating" value="4.0+">
+                                    <span>4.0+ stars</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="rating" value="3.5+">
+                                    <span>3.5+ stars</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Availability -->
+                        <div class="filter-group">
+                            <h4>Availability</h4>
+                            <div class="filter-options">
+                                <label class="filter-option">
+                                    <input type="checkbox" name="availability" value="available">
+                                    <span>Available Now</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="availability" value="busy">
+                                    <span>Busy (Available Soon)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="filter-group">
+                            <h4>Location</h4>
+                            <div class="filter-options">
+                                <label class="filter-option">
+                                    <input type="checkbox" name="location" value="remote">
+                                    <span>Remote Only</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="location" value="us">
+                                    <span>United States</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="location" value="europe">
+                                    <span>Europe</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="location" value="asia">
+                                    <span>Asia</span>
+                                </label>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <!-- Freelancers List -->
+                    <main class="freelancers-main">
+                        <!-- Results Header -->
+                        <div class="results-header">
+                            <div class="results-info">
+                                <h2 id="results-count">Loading freelancers...</h2>
+                                <p id="results-description">Finding the best talent for you</p>
+                            </div>
+                            <div class="sort-options">
+                                <label>Sort by:</label>
+                                <select id="sort-select" onchange="freelancerBrowser.sortFreelancers(this.value)">
+                                    <option value="rating">Highest Rated</option>
+                                    <option value="rate-low">Lowest Rate</option>
+                                    <option value="rate-high">Highest Rate</option>
+                                    <option value="recent">Most Recent</option>
+                                    <option value="jobs">Most Jobs Completed</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Freelancers Grid -->
+                        <div class="freelancers-grid" id="freelancers-grid">
+                            <!-- Freelancers will be populated by JavaScript -->
+                        </div>
+
+                        <!-- Load More -->
+                        <div class="load-more-section">
+                            <button class="btn btn-outline" id="load-more-btn" onclick="freelancerBrowser.loadMoreFreelancers()">
+                                Load More Freelancers
+                            </button>
+                        </div>
+                    </main>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Freelancer Profile Modal -->
+    <div id="freelancer-modal" class="modal-overlay">
+        <div class="modal freelancer-profile-modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="freelancer-modal-title">Freelancer Profile</h2>
+                <button class="modal-close" onclick="freelancerBrowser.closeFreelancerModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="freelancer-modal-content">
+                <!-- Freelancer details will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Hire Modal -->
+    <div id="hire-modal" class="modal-overlay">
+        <div class="modal hire-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Hire Freelancer</h2>
+                <button class="modal-close" onclick="freelancerBrowser.closeHireModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="hire-form" onsubmit="freelancerBrowser.sendHireRequest(event)">
+                    <div class="form-group">
+                        <label class="form-label">Project Title</label>
+                        <input type="text" class="form-input" name="projectTitle" 
+                               placeholder="Enter your project title..." required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Project Description</label>
+                        <textarea class="form-input" name="projectDescription" rows="6" 
+                                placeholder="Describe your project requirements in detail..." required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Budget Type</label>
+                        <div class="budget-type-selector">
+                            <label class="budget-option">
+                                <input type="radio" name="budgetType" value="fixed" checked>
+                                <span>Fixed Price</span>
+                            </label>
+                            <label class="budget-option">
+                                <input type="radio" name="budgetType" value="hourly">
+                                <span>Hourly Rate</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Budget Amount</label>
+                        <div class="budget-input-group">
+                            <span class="currency">$</span>
+                            <input type="number" class="form-input" name="budgetAmount" 
+                                   placeholder="0.00" min="5" step="0.01" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Project Duration</label>
+                        <select class="form-input" name="projectDuration" required>
+                            <option value="">Select duration</option>
+                            <option value="1-week">Less than 1 week</option>
+                            <option value="1-2-weeks">1-2 weeks</option>
+                            <option value="2-4-weeks">2-4 weeks</option>
+                            <option value="1-2-months">1-2 months</option>
+                            <option value="2-3-months">2-3 months</option>
+                            <option value="3-6-months">3-6 months</option>
+                            <option value="6-months+">6+ months</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Additional Message (Optional)</label>
+                        <textarea class="form-input" name="message" rows="3" 
+                                placeholder="Any additional information or questions?"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        Send Hire Request
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+    
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="loading-spinner">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+    <script src="freelancers.js"></script>
+</body>
+</html>

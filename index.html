@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalentSync - Professional Freelancing Marketplace</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-handshake"></i>
+                <span>TalentSync</span>
+            </div>
+            
+            <div class="nav-menu" id="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="browse-jobs.html" class="nav-link">Browse Jobs</a>
+                <a href="freelancers.html" class="nav-link">Find Talent</a>
+                <a href="#how-it-works" class="nav-link">How it Works</a>
+            </div>
+            
+            <div class="nav-actions" id="nav-actions">
+                <button class="theme-toggle" id="theme-toggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button class="btn btn-outline" id="login-btn">Log In</button>
+                <button class="btn btn-primary" id="signup-btn">Sign Up</button>
+            </div>
+            
+            <div class="nav-toggle" id="nav-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main id="main-content">
+        <!-- Landing Page -->
+        <section id="home" class="hero-section">
+            <div class="hero-container">
+                <div class="hero-content">
+                    <h1 class="hero-title">Find the Perfect Freelancer for Your Project</h1>
+                    <p class="hero-subtitle">Connect with talented professionals worldwide and get your work done efficiently</p>
+                    
+                    <div class="hero-search">
+                        <div class="search-container">
+                            <i class="fas fa-search"></i>
+                            <input type="text" placeholder="Search for services..." id="hero-search">
+                            <button class="btn btn-primary">Search</button>
+                        </div>
+                    </div>
+                    
+                    <!-- <div class="hero-stats">
+                        <div class="stat">
+                            <span class="stat-number">2M+</span>
+                            <span class="stat-label">Active Freelancers</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">500K+</span>
+                            <span class="stat-label">Projects Completed</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">98%</span>
+                            <span class="stat-label">Client Satisfaction</span>
+                        </div>
+                    </div> -->
+                </div>
+                
+                <div class="hero-image">
+                    <div class="floating-card card-1">
+                        <i class="fas fa-code"></i>
+                        <span>Web Development</span>
+                    </div>
+                    <div class="floating-card card-2">
+                        <i class="fas fa-paint-brush"></i>
+                        <span>Graphic Design</span>
+                    </div>
+                    <div class="floating-card card-3">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>Mobile Apps</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Categories Section -->
+        <section class="categories-section">
+            <div class="container">
+                <h2 class="section-title">Popular Categories</h2>
+                <div class="categories-grid" id="categories-grid">
+                    <!-- Categories will be populated by JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured Freelancers -->
+        <section class="featured-section">
+            <div class="container">
+                <h2 class="section-title">Top Rated Freelancers</h2>
+                <div class="freelancers-grid" id="featured-freelancers">
+                    <!-- Freelancers will be populated by JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works -->
+        <section id="how-it-works" class="how-it-works-section">
+            <div class="container">
+                <h2 class="section-title">How TalentSync Works</h2>
+                <div class="steps-grid">
+                    <div class="step">
+                        <div class="step-icon">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <h3>1. Create Account</h3>
+                        <p>Sign up as a client or freelancer and complete your profile</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <h3>2. Find & Connect</h3>
+                        <p>Browse projects or talent, send proposals, and start conversations</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-icon">
+                            <i class="fas fa-handshake"></i>
+                        </div>
+                        <h3>3. Work & Get Paid</h3>
+                        <p>Collaborate safely with our secure payment system</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials -->
+        <section class="testimonials-section">
+            <div class="container">
+                <h2 class="section-title">What Our Users Say</h2>
+                <div class="testimonials-grid">
+                    <div class="testimonial">
+                        <div class="testimonial-content">
+                            <p>"TalentSync helped me find amazing developers for my startup. The quality of work exceeded my expectations!"</p>
+                        </div>
+                        <div class="testimonial-author">
+                            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=60&h=60&fit=crop&crop=face" alt="John Smith">
+                            <div>
+                                <h4>John Smith</h4>
+                                <span>CEO, TechStart</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testimonial">
+                        <div class="testimonial-content">
+                            <p>"As a freelancer, TalentSync provides me with consistent, high-quality projects. The platform is intuitive and professional."</p>
+                        </div>
+                        <div class="testimonial-author">
+                            <img src="https://images.unsplash.com/photo-1494790108755-2616b612b786?w=60&h=60&fit=crop&crop=face" alt="Sarah Johnson">
+                            <div>
+                                <h4>Sarah Johnson</h4>
+                                <span>UI/UX Designer</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testimonial">
+                        <div class="testimonial-content">
+                            <p>"The secure payment system and dispute resolution gave me confidence to work with international clients."</p>
+                        </div>
+                        <div class="testimonial-author">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&h=60&fit=crop&crop=face" alt="Mike Chen">
+                            <div>
+                                <h4>Mike Chen</h4>
+                                <span>Full Stack Developer</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-brand">
+                        <i class="fas fa-handshake"></i>
+                        <span>TalentSync</span>
+                    </div>
+                    <p>The world's largest freelancing marketplace connecting businesses with talented professionals.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>For Clients</h4>
+                    <ul>
+                        <li><a href="freelancers.html">Find Freelancers</a></li>
+                        <li><a href="post-job.html">Post a Job</a></li>
+                        <li><a href="#how-it-works">How it Works</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>For Freelancers</h4>
+                    <ul>
+                        <li><a href="browse-jobs.html">Find Work</a></li>
+                        <li><a href="dashboard.html">Create Profile</a></li>
+                        <li><a href="index.html#testimonials">Success Stories</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Support</h4>
+                    <ul>
+                        <li><a href="javascript:void(0)" onclick="showHelpCenter()">Help Center</a></li>
+                        <li><a href="javascript:void(0)" onclick="showContactUs()">Contact Us</a></li>
+                        <li><a href="javascript:void(0)" onclick="showTrustSafety()">Trust & Safety</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 TalentSync. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="https://facebook.com" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook"></i></a>
+                    <a href="https://twitter.com" target="_blank" rel="noopener noreferrer"><i class="fab fa-twitter"></i></a>
+                    <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer"><i class="fab fa-linkedin"></i></a>
+                    <a href="https://instagram.com" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modals and Overlays -->
+    <div id="modal-overlay" class="modal-overlay"></div>
+    
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+    
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="loading-spinner">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

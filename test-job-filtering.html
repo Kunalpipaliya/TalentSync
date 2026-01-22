@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Filtering Test - TalentSync</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .test-container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .test-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        
+        .test-section h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+        
+        .test-results {
+            background: var(--bg-secondary);
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin: 1rem 0;
+        }
+        
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+        
+        .filter-test {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .filter-controls {
+            background: var(--surface);
+            padding: 1rem;
+            border-radius: 6px;
+        }
+        
+        .filter-controls label {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .filter-controls input, .filter-controls select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-handshake"></i>
+                <span>TalentSync</span>
+            </div>
+            
+            <div class="nav-menu" id="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="browse-jobs.html" class="nav-link">Browse Jobs</a>
+                <a href="freelancers.html" class="nav-link">Find Talent</a>
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+            </div>
+            
+            <div class="nav-actions" id="nav-actions">
+                <button class="theme-toggle" id="theme-toggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+            
+            <div class="nav-toggle" id="nav-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="test-container">
+        <h1><i class="fas fa-filter"></i> Job Filtering Test</h1>
+        
+        <div class="test-section">
+            <h3><i class="fas fa-info-circle"></i> Instructions</h3>
+            <p>This page tests the job filtering functionality. Use the controls below to test different filter combinations and see the results.</p>
+            <div class="btn-group">
+                <button class="btn btn-primary btn-sm" onclick="loadJobsForTesting()">
+                    <i class="fas fa-refresh"></i> Load Jobs
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="showJobStats()">
+                    <i class="fas fa-chart-bar"></i> Show Stats
+                </button>
+                <button class="btn btn-info btn-sm" onclick="testAllFilters()">
+                    <i class="fas fa-cogs"></i> Test All Filters
+                </button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3><i class="fas fa-database"></i> Job Data Status</h3>
+            <div id="job-status" class="test-results">Click "Load Jobs" to see job data status...</div>
+        </div>
+
+        <div class="test-section">
+            <h3><i class="fas fa-search"></i> Manual Filter Testing</h3>
+            <div class="filter-test">
+                <div class="filter-controls">
+                    <label>Search Term:</label>
+                    <input type="text" id="test-search" placeholder="Enter search term...">
+                    
+                    <label>Category:</label>
+                    <select id="test-category">
+                        <option value="">All Categories</option>
+                        <option value="web-development">Web Development</option>
+                        <option value="mobile-development">Mobile Development</option>
+                        <option value="design">Design</option>
+                        <option value="writing">Writing</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="data-science">Data Science</option>
+                        <option value="video-editing">Video & Animation</option>
+                    </select>
+                    
+                    <label>Budget Range:</label>
+                    <select id="test-budget">
+                        <option value="">Any Budget</option>
+                        <option value="0-500">$0 - $500</option>
+                        <option value="500-1000">$500 - $1,000</option>
+                        <option value="1000-5000">$1,000 - $5,000</option>
+                        <option value="5000+">$5,000+</option>
+                    </select>
+                    
+                    <button class="btn btn-primary btn-sm" onclick="applyTestFilters()">
+                        Apply Filters
+                    </button>
+                    <button class="btn btn-outline btn-sm" onclick="clearTestFilters()">
+                        Clear Filters
+                    </button>
+                </div>
+                
+                <div id="filter-results" class="test-results">
+                    Apply filters to see results...
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3><i class="fas fa-list"></i> Filtered Jobs Preview</h3>
+            <div id="jobs-preview" class="test-results">
+                No jobs loaded yet...
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3><i class="fas fa-external-link-alt"></i> Navigation</h3>
+            <div class="btn-group">
+                <button class="btn btn-outline btn-sm" onclick="window.open('browse-jobs.html', '_blank')">
+                    <i class="fas fa-external-link-alt"></i> Open Browse Jobs Page
+                </button>
+                <button class="btn btn-outline btn-sm" onclick="window.location.href='browse-jobs.html'">
+                    <i class="fas fa-arrow-right"></i> Go to Browse Jobs
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+
+    <script>
+        // Mock JobBrowser for testing
+        let testJobs = [];
+        let filteredTestJobs = [];
+        
+        async function loadJobsForTesting() {
+            const statusDiv = document.getElementById('job-status');
+            statusDiv.textContent = 'Loading jobs...';
+            
+            try {
+                // Try to load from Firebase first
+                if (typeof firebaseService !== 'undefined' && firebaseService.db) {
+                    const result = await firebaseService.loadJobs();
+                    if (result.success && result.data) {
+                        testJobs = result.data;
+                        statusDiv.textContent = `✅ Loaded ${testJobs.length} jobs from Firebase\n\nSample job categories:\n${getSampleCategories()}`;
+                    } else {
+                        throw new Error('Firebase load failed: ' + result.error);
+                    }
+                } else {
+                    throw new Error('Firebase not available');
+                }
+            } catch (error) {
+                console.log('Firebase failed, using demo data:', error.message);
+                // Fallback to demo data
+                testJobs = generateDemoJobs();
+                statusDiv.textContent = `⚠️ Using demo data (${testJobs.length} jobs)\nFirebase error: ${error.message}\n\nSample job categories:\n${getSampleCategories()}`;
+            }
+            
+            filteredTestJobs = [...testJobs];
+            updateJobsPreview();
+        }
+        
+        function generateDemoJobs() {
+            return [
+                {
+                    id: 1,
+                    title: 'React Developer Needed',
+                    description: 'Looking for an experienced React developer to build a modern web application',
+                    category: 'web-development',
+                    budget: { type: 'fixed', min: 2000, max: 3000 },
+                    skills: ['React', 'JavaScript', 'CSS'],
+                    location: 'Remote',
+                    experience: 'intermediate',
+                    duration: 'medium',
+                    postedDate: new Date().toISOString()
+                },
+                {
+                    id: 2,
+                    title: 'Logo Design Project',
+                    description: 'Need a creative logo design for a new startup company',
+                    category: 'design',
+                    budget: { type: 'fixed', min: 500, max: 800 },
+                    skills: ['Graphic Design', 'Adobe Illustrator', 'Branding'],
+                    location: 'Remote',
+                    experience: 'entry',
+                    duration: 'short',
+                    postedDate: new Date().toISOString()
+                },
+                {
+                    id: 3,
+                    title: 'Content Writer for Blog',
+                    description: 'Looking for a skilled content writer to create engaging blog posts',
+                    category: 'writing',
+                    budget: { type: 'hourly', min: 25, max: 40 },
+                    skills: ['Content Writing', 'SEO', 'Research'],
+                    location: 'Remote',
+                    experience: 'intermediate',
+                    duration: 'long',
+                    postedDate: new Date().toISOString()
+                }
+            ];
+        }
+        
+        function getSampleCategories() {
+            const categories = [...new Set(testJobs.map(job => job.category))];
+            return categories.join(', ');
+        }
+        
+        function showJobStats() {
+            const statusDiv = document.getElementById('job-status');
+            
+            if (testJobs.length === 0) {
+                statusDiv.textContent = 'No jobs loaded. Click "Load Jobs" first.';
+                return;
+            }
+            
+            const categories = {};
+            const budgetRanges = { '0-500': 0, '500-1000': 0, '1000-5000': 0, '5000+': 0 };
+            const experiences = {};
+            
+            testJobs.forEach(job => {
+                // Count categories
+                categories[job.category] = (categories[job.category] || 0) + 1;
+                
+                // Count budget ranges
+                const budget = job.budget.type === 'fixed' ? job.budget.max : job.budget.max * 40;
+                if (budget <= 500) budgetRanges['0-500']++;
+                else if (budget <= 1000) budgetRanges['500-1000']++;
+                else if (budget <= 5000) budgetRanges['1000-5000']++;
+                else budgetRanges['5000+']++;
+                
+                // Count experience levels
+                experiences[job.experience] = (experiences[job.experience] || 0) + 1;
+            });
+            
+            statusDiv.textContent = `📊 Job Statistics (${testJobs.length} total jobs)
+
+Categories:
+${Object.entries(categories).map(([cat, count]) => `  ${cat}: ${count}`).join('\n')}
+
+Budget Ranges:
+${Object.entries(budgetRanges).map(([range, count]) => `  $${range}: ${count}`).join('\n')}
+
+Experience Levels:
+${Object.entries(experiences).map(([exp, count]) => `  ${exp}: ${count}`).join('\n')}`;
+        }
+        
+        function applyTestFilters() {
+            const search = document.getElementById('test-search').value.toLowerCase();
+            const category = document.getElementById('test-category').value;
+            const budget = document.getElementById('test-budget').value;
+            
+            console.log('Applying test filters:', { search, category, budget });
+            
+            filteredTestJobs = testJobs.filter(job => {
+                // Search filter
+                if (search && !job.title.toLowerCase().includes(search) && 
+                    !job.description.toLowerCase().includes(search) &&
+                    !job.skills.some(skill => skill.toLowerCase().includes(search))) {
+                    return false;
+                }
+                
+                // Category filter
+                if (category && job.category !== category) {
+                    return false;
+                }
+                
+                // Budget filter
+                if (budget) {
+                    const jobBudget = job.budget.type === 'fixed' ? job.budget.max : job.budget.max * 40;
+                    switch (budget) {
+                        case '0-500': if (jobBudget > 500) return false; break;
+                        case '500-1000': if (jobBudget <= 500 || jobBudget > 1000) return false; break;
+                        case '1000-5000': if (jobBudget <= 1000 || jobBudget > 5000) return false; break;
+                        case '5000+': if (jobBudget <= 5000) return false; break;
+                    }
+                }
+                
+                return true;
+            });
+            
+            const resultsDiv = document.getElementById('filter-results');
+            resultsDiv.textContent = `✅ Filter Applied Successfully
+
+Original jobs: ${testJobs.length}
+Filtered jobs: ${filteredTestJobs.length}
+
+Filters used:
+${search ? `  Search: "${search}"` : '  Search: (none)'}
+${category ? `  Category: ${category}` : '  Category: (all)'}
+${budget ? `  Budget: $${budget}` : '  Budget: (any)'}
+
+${filteredTestJobs.length === 0 ? '⚠️ No jobs match the current filters.' : ''}`;
+            
+            updateJobsPreview();
+        }
+        
+        function clearTestFilters() {
+            document.getElementById('test-search').value = '';
+            document.getElementById('test-category').value = '';
+            document.getElementById('test-budget').value = '';
+            
+            filteredTestJobs = [...testJobs];
+            
+            const resultsDiv = document.getElementById('filter-results');
+            resultsDiv.textContent = '🔄 Filters cleared. Showing all jobs.';
+            
+            updateJobsPreview();
+        }
+        
+        function updateJobsPreview() {
+            const previewDiv = document.getElementById('jobs-preview');
+            
+            if (filteredTestJobs.length === 0) {
+                previewDiv.textContent = 'No jobs to display.';
+                return;
+            }
+            
+            const preview = filteredTestJobs.slice(0, 5).map((job, index) => 
+                `${index + 1}. ${job.title}
+   Category: ${job.category}
+   Budget: $${job.budget.min}-${job.budget.max} (${job.budget.type})
+   Skills: ${job.skills.join(', ')}
+   Experience: ${job.experience}
+`).join('\n');
+            
+            previewDiv.textContent = `📋 Showing ${Math.min(5, filteredTestJobs.length)} of ${filteredTestJobs.length} jobs:
+
+${preview}${filteredTestJobs.length > 5 ? '\n... and ' + (filteredTestJobs.length - 5) + ' more jobs' : ''}`;
+        }
+        
+        function testAllFilters() {
+            const resultsDiv = document.getElementById('filter-results');
+            resultsDiv.textContent = 'Running comprehensive filter tests...\n\n';
+            
+            if (testJobs.length === 0) {
+                resultsDiv.textContent += '❌ No jobs loaded. Please load jobs first.';
+                return;
+            }
+            
+            let results = '';
+            
+            // Test category filters
+            results += '🔍 Testing Category Filters:\n';
+            const categories = [...new Set(testJobs.map(job => job.category))];
+            categories.forEach(cat => {
+                const filtered = testJobs.filter(job => job.category === cat);
+                results += `  ${cat}: ${filtered.length} jobs\n`;
+            });
+            
+            // Test budget filters
+            results += '\n💰 Testing Budget Filters:\n';
+            const budgetTests = ['0-500', '500-1000', '1000-5000', '5000+'];
+            budgetTests.forEach(range => {
+                const filtered = testJobs.filter(job => {
+                    const budget = job.budget.type === 'fixed' ? job.budget.max : job.budget.max * 40;
+                    switch (range) {
+                        case '0-500': return budget <= 500;
+                        case '500-1000': return budget > 500 && budget <= 1000;
+                        case '1000-5000': return budget > 1000 && budget <= 5000;
+                        case '5000+': return budget > 5000;
+                    }
+                });
+                results += `  $${range}: ${filtered.length} jobs\n`;
+            });
+            
+            // Test search
+            results += '\n🔎 Testing Search:\n';
+            const searchTests = ['react', 'design', 'web', 'javascript'];
+            searchTests.forEach(term => {
+                const filtered = testJobs.filter(job => 
+                    job.title.toLowerCase().includes(term) ||
+                    job.description.toLowerCase().includes(term) ||
+                    job.skills.some(skill => skill.toLowerCase().includes(term))
+                );
+                results += `  "${term}": ${filtered.length} jobs\n`;
+            });
+            
+            results += '\n✅ All filter tests completed!';
+            resultsDiv.textContent = results;
+        }
+        
+        // Auto-load jobs when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(loadJobsForTesting, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - TalentSync</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-handshake"></i>
+                <span>TalentSync</span>
+            </div>
+            
+            <div class="nav-menu" id="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="browse-jobs.html" class="nav-link">Browse Jobs</a>
+                <a href="freelancers.html" class="nav-link">Find Talent</a>
+                <a href="messages.html" class="nav-link">Messages</a>
+            </div>
+            
+            <div class="nav-actions" id="nav-actions">
+                <button class="theme-toggle" id="theme-toggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <!-- User-specific content will be populated by JavaScript -->
+            </div>
+            
+            <div class="nav-toggle" id="nav-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Dashboard Container -->
+    <div class="dashboard-container">
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+        
+        <!-- Mobile Sidebar Toggle Button -->
+        <button class="mobile-sidebar-toggle" id="mobile-sidebar-toggle" style="display: none;">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <!-- Sidebar -->
+        <aside class="dashboard-sidebar" id="dashboard-sidebar">
+            <div class="sidebar-header">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <img id="user-avatar" src="" alt="User Avatar">
+                    </div>
+                    <div class="user-details">
+                        <h3 id="user-name"></h3>
+                        <p id="user-role"></p>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul id="sidebar-menu">
+                    <!-- Menu items will be populated by JavaScript based on user role -->
+                </ul>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button class="btn btn-outline" onclick="talentSync.logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="dashboard-main">
+            <!-- Dashboard Overview -->
+            <section id="dashboard-overview" class="dashboard-section active">
+                <div class="section-header">
+                    <h1 id="dashboard-title">Dashboard</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="primary-action-btn">
+                            <!-- Content will be set by JavaScript -->
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="stats-grid" id="stats-grid">
+                    <!-- Stats will be populated by JavaScript -->
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <h2>Quick Actions</h2>
+                    <div class="actions-grid" id="actions-grid">
+                        <!-- Actions will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="recent-activity">
+                    <h2>Recent Activity</h2>
+                    <div class="activity-list" id="activity-list">
+                        <!-- Activity will be populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Profile Section -->
+            <section id="profile-section" class="dashboard-section">
+                <div class="section-header">
+                    <h1>My Profile</h1>
+                    <button class="btn btn-primary" onclick="talentSync.editProfile()">
+                        <i class="fas fa-edit"></i>
+                        Edit Profile
+                    </button>
+                </div>
+
+                <div class="profile-content">
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <div class="profile-avatar">
+                                <img id="profile-avatar" src="" alt="Profile Avatar">
+                                <button class="avatar-upload" onclick="talentSync.uploadAvatar()">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                            </div>
+                            <div class="profile-info">
+                                <h2 id="profile-name"></h2>
+                                <p id="profile-title"></p>
+                                <div class="profile-rating" id="profile-rating">
+                                    <!-- Rating will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="profile-details">
+                            <div class="detail-section">
+                                <h3>About</h3>
+                                <p id="profile-bio"></p>
+                            </div>
+
+                            <div class="detail-section" id="skills-section">
+                                <h3>Skills</h3>
+                                <div class="skills-list" id="skills-list">
+                                    <!-- Skills will be populated by JavaScript -->
+                                </div>
+                            </div>
+
+                            <div class="detail-section" id="portfolio-section">
+                                <h3>Portfolio</h3>
+                                <div class="portfolio-grid" id="portfolio-grid">
+                                    <!-- Portfolio items will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Jobs/Projects Section -->
+            <section id="jobs-section" class="dashboard-section">
+                <div class="section-header">
+                    <h1 id="jobs-title">My Jobs</h1>
+                    <div class="header-filters">
+                        <select id="jobs-filter">
+                            <option value="all">All</option>
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="jobs-grid" id="jobs-grid">
+                    <!-- Jobs will be populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Proposals Section (Freelancer only) -->
+            <section id="proposals-section" class="dashboard-section">
+                <div class="section-header">
+                    <h1>My Proposals</h1>
+                    <div class="header-filters">
+                        <select id="proposals-filter">
+                            <option value="all">All</option>
+                            <option value="pending">Pending</option>
+                            <option value="accepted">Accepted</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="proposals-list" id="proposals-list">
+                    <!-- Proposals will be populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Earnings Section -->
+            <section id="earnings-section" class="dashboard-section">
+                <div class="section-header">
+                    <h1>Earnings</h1>
+                    <div class="header-filters">
+                        <select id="earnings-period">
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                            <option value="year">This Year</option>
+                            <option value="all">All Time</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="earnings-content">
+                    <div class="earnings-chart">
+                        <canvas id="earnings-chart-canvas"></canvas>
+                    </div>
+                    
+                    <div class="earnings-summary">
+                        <div class="summary-card">
+                            <h3>Total Earnings</h3>
+                            <p class="amount" id="total-earnings">$0</p>
+                        </div>
+                        <div class="summary-card">
+                            <h3>This Month</h3>
+                            <p class="amount" id="month-earnings">$0</p>
+                        </div>
+                        <div class="summary-card">
+                            <h3>Pending</h3>
+                            <p class="amount" id="pending-earnings">$0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="transactions-list">
+                    <h3>Recent Transactions</h3>
+                    <div id="transactions-list">
+                        <!-- Transactions will be populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings-section" class="dashboard-section">
+                <div class="section-header">
+                    <h1>Settings</h1>
+                </div>
+
+                <div class="settings-content">
+                    <div class="settings-group">
+                        <h3>Account Settings</h3>
+                        <div class="setting-item">
+                            <label>Email Notifications</label>
+                            <label class="toggle">
+                                <input type="checkbox" id="email-notifications">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label>SMS Notifications</label>
+                            <label class="toggle">
+                                <input type="checkbox" id="sms-notifications">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label>Profile Visibility</label>
+                            <select id="profile-visibility">
+                                <option value="public">Public</option>
+                                <option value="private">Private</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <h3>Privacy & Security</h3>
+                        <button class="btn btn-outline" onclick="talentSync.changePassword()">
+                            Change Password
+                        </button>
+                        <button class="btn btn-outline" onclick="talentSync.enableTwoFactor()">
+                            Enable Two-Factor Authentication
+                        </button>
+                    </div>
+
+                    <div class="settings-group">
+                        <h3>Danger Zone</h3>
+                        <button class="btn btn-danger" onclick="talentSync.deleteAccount()">
+                            Delete Account
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals and Overlays -->
+    <div id="modal-overlay" class="modal-overlay"></div>
+    
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+    
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="loading-spinner">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>

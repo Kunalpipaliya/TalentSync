@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Job Management Test - TalentSync</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
+    <style>
+        body { padding: 20px; font-family: Arial, sans-serif; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .test-button { margin: 5px; padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .test-button:hover { background: #0056b3; }
+        .test-button.success { background: #28a745; }
+        .test-button.error { background: #dc3545; }
+        .log-entry { margin: 5px 0; padding: 5px; border-left: 3px solid #007bff; background: #f8f9fa; }
+        .log-entry.success { border-left-color: #28a745; }
+        .log-entry.error { border-left-color: #dc3545; }
+        .job-card { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Comprehensive Job Management Test</h1>
+    
+    <div class="test-section">
+        <h2>1. System Initialization Test</h2>
+        <button class="test-button" onclick="testSystemInit()">Test System Initialization</button>
+        <div id="init-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. User Authentication Test</h2>
+        <button class="test-button" onclick="testUserAuth()">Test User Authentication</button>
+        <div id="auth-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Firebase Connection Test</h2>
+        <button class="test-button" onclick="testFirebaseConnection()">Test Firebase Connection</button>
+        <div id="firebase-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Job Creation Test</h2>
+        <button class="test-button" onclick="createTestJob()">Create Test Job</button>
+        <div id="job-creation-results"></div>
+        <div id="created-job-info"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>5. Job Management Functions Test</h2>
+        <button class="test-button" onclick="testJobManagementFunctions()">Test Job Management Functions</button>
+        <div id="job-management-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>6. Modal System Test</h2>
+        <button class="test-button" onclick="testModalSystem()">Test Modal System</button>
+        <div id="modal-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>7. End-to-End Job Management Test</h2>
+        <button class="test-button" onclick="testEndToEndJobManagement()">Test Complete Job Management Flow</button>
+        <div id="e2e-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test Logs</h2>
+        <button class="test-button" onclick="clearLogs()">Clear Logs</button>
+        <div id="test-logs"></div>
+    </div>
+    
+    <!-- Modal Overlay -->
+    <div id="modal-overlay" class="modal-overlay"></div>
+    
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+    <script src="dashboard.js"></script>
+    
+    <script>
+        let testJobId = null;
+        
+        function log(message, type = 'info') {
+            const logs = document.getElementById('test-logs');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            logs.appendChild(logEntry);
+            console.log(`[${type.toUpperCase()}] ${message}`);
+            
+            // Auto-scroll to bottom
+            logs.scrollTop = logs.scrollHeight;
+        }
+        
+        function clearLogs() {
+            document.getElementById('test-logs').innerHTML = '';
+        }
+        
+        function updateTestResult(sectionId, success, message) {
+            const section = document.getElementById(sectionId);
+            section.innerHTML = `<div class="log-entry ${success ? 'success' : 'error'}">${message}</div>`;
+        }
+        
+        function testSystemInit() {
+            log('Testing system initialization...');
+            
+            let allGood = true;
+            let results = [];
+            
+            // Test if Firebase is loaded
+            if (typeof firebase !== 'undefined') {
+                results.push('✅ Firebase SDK loaded');
+                log('Firebase SDK loaded successfully', 'success');
+            } else {
+                results.push('❌ Firebase SDK not loaded');
+                log('Firebase SDK not loaded', 'error');
+                allGood = false;
+            }
+            
+            // Test if firebaseService is initialized
+            if (typeof firebaseService !== 'undefined' && firebaseService.db) {
+                results.push('✅ Firebase service initialized');
+                log('Firebase service initialized successfully', 'success');
+            } else {
+                results.push('❌ Firebase service not initialized');
+                log('Firebase service not initialized', 'error');
+                allGood = false;
+            }
+            
+            // Test if talentSync is loaded
+            if (typeof talentSync !== 'undefined') {
+                results.push('✅ TalentSync loaded');
+                log('TalentSync loaded successfully', 'success');
+            } else {
+                results.push('❌ TalentSync not loaded');
+                log('TalentSync not loaded', 'error');
+                allGood = false;
+            }
+            
+            // Test if dashboard is loaded
+            if (typeof dashboard !== 'undefined') {
+                results.push('✅ Dashboard loaded');
+                log('Dashboard loaded successfully', 'success');
+            } else {
+                results.push('❌ Dashboard not loaded');
+                log('Dashboard not loaded', 'error');
+                allGood = false;
+            }
+            
+            updateTestResult('init-results', allGood, results.join('<br>'));
+        }
+        
+        function testUserAuth() {
+            log('Testing user authentication...');
+            
+            // Create a mock user for testing
+            const mockUser = {
+                id: 'test-client-' + Date.now(),
+                uid: 'test-client-' + Date.now(),
+                fullName: 'Test Client',
+                email: 'test@example.com',
+                role: 'client',
+                profile: {
+                    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
+                }
+            };
+            
+            // Set the mock user
+            if (typeof talentSync !== 'undefined') {
+                talentSync.currentUser = mockUser;
+                log('Mock user set successfully', 'success');
+                updateTestResult('auth-results', true, '✅ Mock user authentication successful<br>User ID: ' + mockUser.id + '<br>Role: ' + mockUser.role);
+            } else {
+                log('Cannot set mock user - talentSync not available', 'error');
+                updateTestResult('auth-results', false, '❌ Cannot set mock user - talentSync not available');
+            }
+        }
+        
+        async function testFirebaseConnection() {
+            log('Testing Firebase connection...');
+            
+            try {
+                if (!firebaseService || !firebaseService.db) {
+                    throw new Error('Firebase service not available');
+                }
+                
+                // Test basic Firestore connection
+                const testQuery = await firebaseService.db.collection('jobs').limit(1).get();
+                log(`Firebase connection successful - jobs collection size: ${testQuery.size}`, 'success');
+                
+                // Test if we can write (create a test document)
+                const testDoc = {
+                    test: true,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    testId: 'connection-test-' + Date.now()
+                };
+                
+                const docRef = await firebaseService.db.collection('test').add(testDoc);
+                log(`Firebase write test successful - doc ID: ${docRef.id}`, 'success');
+                
+                // Clean up test document
+                await firebaseService.db.collection('test').doc(docRef.id).delete();
+                log('Test document cleaned up', 'success');
+                
+                updateTestResult('firebase-results', true, '✅ Firebase connection and write operations successful');
+                
+            } catch (error) {
+                log(`Firebase connection test failed: ${error.message}`, 'error');
+                updateTestResult('firebase-results', false, `❌ Firebase connection failed: ${error.message}`);
+            }
+        }
+        
+        async function createTestJob() {
+            log('Creating test job...');
+            
+            if (!firebaseService || !firebaseService.saveJob) {
+                log('Firebase service not available for job creation', 'error');
+                updateTestResult('job-creation-results', false, '❌ Firebase service not available');
+                return;
+            }
+            
+            if (!talentSync || !talentSync.currentUser) {
+                log('No authenticated user for job creation', 'error');
+                updateTestResult('job-creation-results', false, '❌ No authenticated user');
+                return;
+            }
+            
+            const testJob = {
+                title: 'Test Job for Management - ' + Date.now(),
+                description: 'This is a comprehensive test job created for debugging job management functionality. It includes all required fields and proper structure.',
+                category: 'web-development',
+                budgetType: 'fixed',
+                budgetMin: 1000,
+                budgetMax: 2500,
+                experience: 'intermediate',
+                duration: 'medium',
+                skills: ['JavaScript', 'React', 'Node.js', 'Firebase'],
+                location: 'Remote',
+                status: 'active',
+                clientId: talentSync.currentUser.id || talentSync.currentUser.uid,
+                clientName: talentSync.currentUser.fullName,
+                clientAvatar: talentSync.currentUser.profile?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=60&h=60&fit=crop&crop=face',
+                clientRating: 4.5,
+                clientJobsPosted: 5,
+                proposals: 0,
+                postedDate: new Date().toISOString()
+            };
+            
+            try {
+                const result = await firebaseService.saveJob(testJob);
+                if (result.success) {
+                    testJobId = result.id;
+                    log(`Test job created successfully with ID: ${testJobId}`, 'success');
+                    
+                    // Display job info
+                    const jobInfo = `
+                        <div class="job-card">
+                            <h4>${testJob.title}</h4>
+                            <p><strong>ID:</strong> ${testJobId}</p>
+                            <p><strong>Budget:</strong> $${testJob.budgetMin} - $${testJob.budgetMax}</p>
+                            <p><strong>Status:</strong> ${testJob.status}</p>
+                            <button class="test-button" onclick="testManageJobWithId('${testJobId}')">Test Manage This Job</button>
+                        </div>
+                    `;
+                    document.getElementById('created-job-info').innerHTML = jobInfo;
+                    
+                    updateTestResult('job-creation-results', true, `✅ Test job created successfully<br>Job ID: ${testJobId}`);
+                } else {
+                    log(`Failed to create test job: ${result.error}`, 'error');
+                    updateTestResult('job-creation-results', false, `❌ Failed to create test job: ${result.error}`);
+                }
+            } catch (error) {
+                log(`Error creating test job: ${error.message}`, 'error');
+                updateTestResult('job-creation-results', false, `❌ Error creating test job: ${error.message}`);
+            }
+        }
+        
+        function testJobManagementFunctions() {
+            log('Testing job management functions...');
+            
+            let allGood = true;
+            let results = [];
+            
+            if (typeof dashboard === 'undefined') {
+                results.push('❌ Dashboard object not found');
+                allGood = false;
+            } else {
+                results.push('✅ Dashboard object exists');
+                
+                // Test required methods
+                const requiredMethods = ['manageJob', 'handleJobUpdate', 'deleteJob', 'showJobManagementModal', 'toggleBudgetFields'];
+                
+                requiredMethods.forEach(method => {
+                    if (typeof dashboard[method] === 'function') {
+                        results.push(`✅ ${method} method exists`);
+                        log(`${method} method found`, 'success');
+                    } else {
+                        results.push(`❌ ${method} method missing`);
+                        log(`${method} method missing`, 'error');
+                        allGood = false;
+                    }
+                });
+            }
+            
+            updateTestResult('job-management-results', allGood, results.join('<br>'));
+        }
+        
+        function testModalSystem() {
+            log('Testing modal system...');
+            
+            if (typeof talentSync === 'undefined' || typeof talentSync.showModal !== 'function') {
+                log('Modal system not available', 'error');
+                updateTestResult('modal-results', false, '❌ Modal system not available');
+                return;
+            }
+            
+            const testModalHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Test Modal</h2>
+                        <button class="modal-close" onclick="talentSync.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>This is a test modal to verify the modal system is working correctly.</p>
+                        <button class="test-button" onclick="talentSync.closeModal()">Close Modal</button>
+                    </div>
+                </div>
+            `;
+            
+            try {
+                talentSync.showModal(testModalHTML);
+                log('Test modal displayed successfully', 'success');
+                updateTestResult('modal-results', true, '✅ Modal system working correctly');
+            } catch (error) {
+                log(`Modal system error: ${error.message}`, 'error');
+                updateTestResult('modal-results', false, `❌ Modal system error: ${error.message}`);
+            }
+        }
+        
+        function testManageJobWithId(jobId) {
+            log(`Testing manageJob with job ID: ${jobId}`);
+            
+            if (typeof dashboard === 'undefined' || typeof dashboard.manageJob !== 'function') {
+                log('Dashboard or manageJob not available', 'error');
+                return;
+            }
+            
+            try {
+                dashboard.manageJob(jobId);
+                log('manageJob function called successfully', 'success');
+            } catch (error) {
+                log(`Error calling manageJob: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testEndToEndJobManagement() {
+            log('Starting end-to-end job management test...');
+            
+            if (!testJobId) {
+                log('No test job available. Please create a test job first.', 'error');
+                updateTestResult('e2e-results', false, '❌ No test job available. Create a test job first.');
+                return;
+            }
+            
+            try {
+                // Test 1: Load the job
+                log('Step 1: Loading job from Firestore...');
+                const doc = await firebaseService.db.collection('jobs').doc(testJobId).get();
+                
+                if (!doc.exists) {
+                    throw new Error('Test job not found in Firestore');
+                }
+                
+                const jobData = doc.data();
+                log(`Job loaded successfully: ${jobData.title}`, 'success');
+                
+                // Test 2: Test manageJob function
+                log('Step 2: Testing manageJob function...');
+                if (typeof dashboard.manageJob === 'function') {
+                    dashboard.manageJob(testJobId);
+                    log('manageJob function executed successfully', 'success');
+                } else {
+                    throw new Error('manageJob function not available');
+                }
+                
+                // Test 3: Test update functionality (we'll simulate this)
+                log('Step 3: Testing job update functionality...');
+                const updateData = {
+                    title: jobData.title + ' (Updated)',
+                    status: 'in-review'
+                };
+                
+                const updateResult = await firebaseService.updateJob(testJobId, updateData);
+                if (updateResult.success) {
+                    log('Job update test successful', 'success');
+                } else {
+                    throw new Error('Job update failed: ' + updateResult.error);
+                }
+                
+                updateTestResult('e2e-results', true, '✅ End-to-end job management test successful<br>All functions working correctly');
+                
+            } catch (error) {
+                log(`End-to-end test failed: ${error.message}`, 'error');
+                updateTestResult('e2e-results', false, `❌ End-to-end test failed: ${error.message}`);
+            }
+        }
+        
+        // Initialize tests when page loads
+        window.addEventListener('load', () => {
+            log('🚀 Comprehensive job management test page loaded');
+            
+            // Wait for all scripts to load
+            setTimeout(() => {
+                log('Running initial system check...');
+                testSystemInit();
+                
+                // Set up mock user after a delay
+                setTimeout(() => {
+                    testUserAuth();
+                }, 1000);
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

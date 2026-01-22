@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post a Job - TalentSync</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="post-job.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-handshake"></i>
+                <span>TalentSync</span>
+            </div>
+            
+            <div class="nav-menu" id="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="browse-jobs.html" class="nav-link">Browse Jobs</a>
+                <a href="freelancers.html" class="nav-link">Find Talent</a>
+                <a href="messages.html" class="nav-link">Messages</a>
+            </div>
+            
+            <div class="nav-actions" id="nav-actions">
+                <button class="theme-toggle" id="theme-toggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <!-- User-specific content will be populated by JavaScript -->
+            </div>
+            
+            <div class="nav-toggle" id="nav-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Hero Section -->
+        <section class="post-job-hero">
+            <div class="container">
+                <h1>Post Your Project</h1>
+                <p>Find the perfect freelancer for your project in just a few steps</p>
+                
+                <div class="steps-indicator">
+                    <div class="step active" data-step="1">
+                        <div class="step-number">1</div>
+                        <span>Project Details</span>
+                    </div>
+                    <div class="step" data-step="2">
+                        <div class="step-number">2</div>
+                        <span>Budget & Timeline</span>
+                    </div>
+                    <div class="step" data-step="3">
+                        <div class="step-number">3</div>
+                        <span>Skills & Requirements</span>
+                    </div>
+                    <div class="step" data-step="4">
+                        <div class="step-number">4</div>
+                        <span>Review & Publish</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Job Posting Form -->
+        <section class="job-form-section">
+            <div class="container">
+                <div class="job-form-container">
+                    <form id="job-posting-form" onsubmit="jobPoster.submitJob(event)">
+                        <!-- Step 1: Project Details -->
+                        <div class="form-step active" id="step-1">
+                            <div class="step-header">
+                                <h2>Tell us about your project</h2>
+                                <p>Start with a strong title and description to attract the right freelancers</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Project Title *</label>
+                                <input type="text" class="form-input" name="title" 
+                                       placeholder="e.g., Build a responsive e-commerce website" required>
+                                <small class="form-help">Write a clear, descriptive title for your project</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Project Category *</label>
+                                <select class="form-input" name="category" required>
+                                    <option value="">Select a category</option>
+                                    <option value="web-development">Web Development</option>
+                                    <option value="mobile-development">Mobile Development</option>
+                                    <option value="design">Design & Creative</option>
+                                    <option value="writing">Writing & Content</option>
+                                    <option value="marketing">Digital Marketing</option>
+                                    <option value="data-science">Data Science</option>
+                                    <option value="video-editing">Video & Animation</option>
+                                    <option value="translation">Translation</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Project Description *</label>
+                                <div class="rich-text-editor">
+                                    <div class="editor-toolbar">
+                                        <button type="button" class="editor-btn" onclick="jobPoster.formatText('bold')">
+                                            <i class="fas fa-bold"></i>
+                                        </button>
+                                        <button type="button" class="editor-btn" onclick="jobPoster.formatText('italic')">
+                                            <i class="fas fa-italic"></i>
+                                        </button>
+                                        <button type="button" class="editor-btn" onclick="jobPoster.formatText('insertUnorderedList')">
+                                            <i class="fas fa-list-ul"></i>
+                                        </button>
+                                        <button type="button" class="editor-btn" onclick="jobPoster.formatText('insertOrderedList')">
+                                            <i class="fas fa-list-ol"></i>
+                                        </button>
+                                    </div>
+                                    <div class="editor-content" contenteditable="true" id="project-description"
+                                         placeholder="Describe your project in detail. Include objectives, requirements, and any specific preferences..."></div>
+                                </div>
+                                <textarea name="description" id="description-hidden" style="display: none;" required></textarea>
+                                <small class="form-help">Minimum 100 characters. Be specific about what you need.</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Project Files (Optional)</label>
+                                <div class="file-upload-area" onclick="document.getElementById('project-files').click()">
+                                    <input type="file" id="project-files" multiple accept=".pdf,.doc,.docx,.txt,.jpg,.png,.zip" style="display: none;">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <p>Upload project files, mockups, or references</p>
+                                    <small>Supported formats: PDF, DOC, DOCX, TXT, JPG, PNG, ZIP (Max 10MB each)</small>
+                                </div>
+                                <div id="uploaded-files" class="uploaded-files"></div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Budget & Timeline -->
+                        <div class="form-step" id="step-2">
+                            <div class="step-header">
+                                <h2>Set your budget and timeline</h2>
+                                <p>Help freelancers understand your project scope and expectations</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Budget Type *</label>
+                                <div class="budget-type-selector">
+                                    <label class="budget-option">
+                                        <input type="radio" name="budgetType" value="fixed" checked>
+                                        <div class="option-content">
+                                            <i class="fas fa-dollar-sign"></i>
+                                            <h4>Fixed Price</h4>
+                                            <p>Pay a set amount for the entire project</p>
+                                        </div>
+                                    </label>
+                                    <label class="budget-option">
+                                        <input type="radio" name="budgetType" value="hourly">
+                                        <div class="option-content">
+                                            <i class="fas fa-clock"></i>
+                                            <h4>Hourly Rate</h4>
+                                            <p>Pay for hours worked on your project</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group" id="fixed-budget-group">
+                                <label class="form-label">Project Budget *</label>
+                                <div class="budget-range">
+                                    <div class="budget-input">
+                                        <span class="currency">$</span>
+                                        <input type="number" class="form-input" name="budgetMin" 
+                                               placeholder="500" min="5" step="1">
+                                        <span class="range-separator">to</span>
+                                        <span class="currency">$</span>
+                                        <input type="number" class="form-input" name="budgetMax" 
+                                               placeholder="1000" min="5" step="1">
+                                    </div>
+                                </div>
+                                <small class="form-help">Set a realistic budget range for your project</small>
+                            </div>
+                            
+                            <div class="form-group" id="hourly-budget-group" style="display: none;">
+                                <label class="form-label">Hourly Rate Range *</label>
+                                <div class="budget-range">
+                                    <div class="budget-input">
+                                        <span class="currency">$</span>
+                                        <input type="number" class="form-input" name="hourlyMin" 
+                                               placeholder="25" min="5" step="1">
+                                        <span class="range-separator">to</span>
+                                        <span class="currency">$</span>
+                                        <input type="number" class="form-input" name="hourlyMax" 
+                                               placeholder="75" min="5" step="1">
+                                        <span class="per-hour">/hr</span>
+                                    </div>
+                                </div>
+                                <small class="form-help">Expected hourly rate for this project</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Project Duration *</label>
+                                <select class="form-input" name="duration" required>
+                                    <option value="">Select project duration</option>
+                                    <option value="less-than-1-week">Less than 1 week</option>
+                                    <option value="1-2-weeks">1-2 weeks</option>
+                                    <option value="2-4-weeks">2-4 weeks</option>
+                                    <option value="1-2-months">1-2 months</option>
+                                    <option value="2-3-months">2-3 months</option>
+                                    <option value="3-6-months">3-6 months</option>
+                                    <option value="more-than-6-months">More than 6 months</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Experience Level Required *</label>
+                                <div class="experience-selector">
+                                    <label class="experience-option">
+                                        <input type="radio" name="experienceLevel" value="entry" required>
+                                        <div class="option-content">
+                                            <h4>Entry Level</h4>
+                                            <p>New freelancers with basic skills</p>
+                                            <span class="price-range">$10-25/hr</span>
+                                        </div>
+                                    </label>
+                                    <label class="experience-option">
+                                        <input type="radio" name="experienceLevel" value="intermediate" required>
+                                        <div class="option-content">
+                                            <h4>Intermediate</h4>
+                                            <p>Experienced freelancers with proven track record</p>
+                                            <span class="price-range">$25-75/hr</span>
+                                        </div>
+                                    </label>
+                                    <label class="experience-option">
+                                        <input type="radio" name="experienceLevel" value="expert" required>
+                                        <div class="option-content">
+                                            <h4>Expert</h4>
+                                            <p>Top-tier freelancers with specialized expertise</p>
+                                            <span class="price-range">$75+/hr</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Skills & Requirements -->
+                        <div class="form-step" id="step-3">
+                            <div class="step-header">
+                                <h2>What skills are required?</h2>
+                                <p>Add the specific skills and requirements for your project</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Required Skills *</label>
+                                <div class="skills-input-container">
+                                    <input type="text" class="form-input" id="skills-input" 
+                                           placeholder="Type a skill and press Enter (e.g., JavaScript, React, Node.js)">
+                                    <div class="skills-suggestions" id="skills-suggestions"></div>
+                                </div>
+                                <div class="selected-skills" id="selected-skills"></div>
+                                <input type="hidden" name="skills" id="skills-hidden">
+                                <small class="form-help">Add 3-10 relevant skills for your project</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Additional Requirements</label>
+                                <div class="requirements-checklist">
+                                    <label class="checkbox-option">
+                                        <input type="checkbox" name="requirements" value="portfolio-required">
+                                        <span>Portfolio/Previous work samples required</span>
+                                    </label>
+                                    <label class="checkbox-option">
+                                        <input type="checkbox" name="requirements" value="interview-required">
+                                        <span>Interview required before hiring</span>
+                                    </label>
+                                    <label class="checkbox-option">
+                                        <input type="checkbox" name="requirements" value="nda-required">
+                                        <span>Non-disclosure agreement (NDA) required</span>
+                                    </label>
+                                    <label class="checkbox-option">
+                                        <input type="checkbox" name="requirements" value="timezone-specific">
+                                        <span>Specific timezone/working hours required</span>
+                                    </label>
+                                    <label class="checkbox-option">
+                                        <input type="checkbox" name="requirements" value="ongoing-work">
+                                        <span>Potential for ongoing work</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Preferred Location</label>
+                                <select class="form-input" name="location">
+                                    <option value="">No preference</option>
+                                    <option value="remote">Remote only</option>
+                                    <option value="local">Local freelancers only</option>
+                                    <option value="us">United States</option>
+                                    <option value="canada">Canada</option>
+                                    <option value="uk">United Kingdom</option>
+                                    <option value="europe">Europe</option>
+                                    <option value="asia">Asia</option>
+                                    <option value="australia">Australia</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Questions for Freelancers</label>
+                                <div class="questions-container" id="questions-container">
+                                    <div class="question-input">
+                                        <input type="text" class="form-input" name="questions[]" 
+                                               placeholder="e.g., How many similar projects have you completed?">
+                                        <button type="button" class="remove-question" onclick="jobPoster.removeQuestion(this)">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="jobPoster.addQuestion()">
+                                    <i class="fas fa-plus"></i> Add Question
+                                </button>
+                                <small class="form-help">Ask specific questions to help you evaluate proposals</small>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Review & Publish -->
+                        <div class="form-step" id="step-4">
+                            <div class="step-header">
+                                <h2>Review your job posting</h2>
+                                <p>Make sure everything looks good before publishing</p>
+                            </div>
+                            
+                            <div class="job-preview" id="job-preview">
+                                <!-- Job preview will be populated by JavaScript -->
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="checkbox-option">
+                                    <input type="checkbox" name="terms" required>
+                                    <span>I agree to the <a href="#" target="_blank">Terms of Service</a> and <a href="#" target="_blank">Privacy Policy</a></span>
+                                </label>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="checkbox-option">
+                                    <input type="checkbox" name="notifications">
+                                    <span>Send me email notifications when freelancers apply to this job</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Form Navigation -->
+                        <div class="form-navigation">
+                            <button type="button" class="btn btn-outline" id="prev-btn" 
+                                    onclick="jobPoster.previousStep()" style="display: none;">
+                                <i class="fas fa-arrow-left"></i> Previous
+                            </button>
+                            
+                            <div class="nav-spacer"></div>
+                            
+                            <button type="button" class="btn btn-primary" id="next-btn" 
+                                    onclick="jobPoster.nextStep()">
+                                Next <i class="fas fa-arrow-right"></i>
+                            </button>
+                            
+                            <button type="submit" class="btn btn-primary" id="submit-btn" 
+                                    style="display: none;">
+                                <i class="fas fa-rocket"></i> Publish Job
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Sidebar Tips -->
+                <aside class="tips-sidebar">
+                    <div class="tip-card">
+                        <h3><i class="fas fa-lightbulb"></i> Tips for Success</h3>
+                        <ul>
+                            <li>Write a clear, detailed project description</li>
+                            <li>Set a realistic budget and timeline</li>
+                            <li>Be specific about required skills</li>
+                            <li>Include examples or references when possible</li>
+                            <li>Respond to proposals quickly</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="tip-card">
+                        <h3><i class="fas fa-shield-alt"></i> Stay Safe</h3>
+                        <ul>
+                            <li>Keep all communication on TalentSync</li>
+                            <li>Use our secure payment system</li>
+                            <li>Check freelancer reviews and ratings</li>
+                            <li>Start with a small test project</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="tip-card">
+                        <h3><i class="fas fa-chart-line"></i> Get Better Results</h3>
+                        <ul>
+                            <li>Provide detailed project requirements</li>
+                            <li>Set clear milestones and deadlines</li>
+                            <li>Give constructive feedback</li>
+                            <li>Build long-term relationships</li>
+                        </ul>
+                    </div>
+                </aside>
+            </div>
+        </section>
+    </main>
+
+    <!-- Success Modal -->
+    <div id="success-modal" class="modal-overlay">
+        <div class="modal success-modal">
+            <div class="modal-body">
+                <div class="success-content">
+                    <i class="fas fa-check-circle"></i>
+                    <h2>Job Posted Successfully!</h2>
+                    <p>Your job has been published and is now visible to freelancers. You'll start receiving proposals soon.</p>
+                    
+                    <div class="success-actions">
+                        <button class="btn btn-primary" onclick="jobPoster.goToDashboard()">
+                            View in Dashboard
+                        </button>
+                        <button class="btn btn-outline" onclick="jobPoster.postAnotherJob()">
+                            Post Another Job
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+    
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="loading-spinner">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+    <script src="post-job.js"></script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Working Job Management Demo</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
+    <style>
+        body { padding: 20px; font-family: Arial, sans-serif; }
+        .demo-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <h1>Working Job Management Demo</h1>
+    
+    <div class="demo-section">
+        <h2>Step 1: Setup</h2>
+        <button onclick="setupDemo()" class="btn btn-primary">Setup Demo Environment</button>
+        <div id="setup-status"></div>
+    </div>
+    
+    <div class="demo-section">
+        <h2>Step 2: Create Real Job</h2>
+        <button onclick="createRealJob()" class="btn btn-success">Create Real Job in Firebase</button>
+        <div id="job-creation-status"></div>
+    </div>
+    
+    <div class="demo-section">
+        <h2>Step 3: Load Jobs from Dashboard</h2>
+        <button onclick="loadJobsFromDashboard()" class="btn btn-info">Load Jobs from Dashboard</button>
+        <div id="jobs-display"></div>
+    </div>
+    
+    <div class="demo-section">
+        <h2>Step 4: Test Job Management</h2>
+        <div id="job-management-area"></div>
+    </div>
+    
+    <!-- Modal Overlay -->
+    <div id="modal-overlay" class="modal-overlay"></div>
+    
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+    <script src="dashboard.js"></script>
+    
+    <script>
+        let demoJobId = null;
+        
+        function showStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        async function setupDemo() {
+            console.log('Setting up demo environment...');
+            showStatus('setup-status', 'Setting up demo environment...', 'info');
+            
+            try {
+                // Wait for Firebase to initialize
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Check Firebase connection
+                if (!firebaseService || !firebaseService.db) {
+                    throw new Error('Firebase service not available');
+                }
+                
+                // Test Firebase connection
+                await firebaseService.db.collection('jobs').limit(1).get();
+                
+                // Set up authenticated user
+                const mockUser = {
+                    id: 'demo-client-' + Date.now(),
+                    uid: 'demo-client-' + Date.now(),
+                    fullName: 'Demo Client User',
+                    email: 'demo@example.com',
+                    role: 'client',
+                    profile: {
+                        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+                        totalSpent: 5000,
+                        activeProjects: 2
+                    }
+                };
+                
+                if (talentSync) {
+                    talentSync.currentUser = mockUser;
+                }
+                
+                showStatus('setup-status', '✅ Demo environment setup complete!<br>• Firebase connected<br>• Mock user authenticated<br>• Dashboard initialized', 'success');
+                
+            } catch (error) {
+                console.error('Setup failed:', error);
+                showStatus('setup-status', `❌ Setup failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function createRealJob() {
+            console.log('Creating real job in Firebase...');
+            showStatus('job-creation-status', 'Creating job in Firebase...', 'info');
+            
+            if (!talentSync || !talentSync.currentUser) {
+                showStatus('job-creation-status', '❌ Please setup demo environment first', 'error');
+                return;
+            }
+            
+            const jobData = {
+                title: 'Demo Job for Management Testing - ' + new Date().toLocaleString(),
+                description: 'This is a real job created in Firebase for testing the job management functionality. It includes all required fields and proper structure.',
+                category: 'web-development',
+                budgetType: 'fixed',
+                budgetMin: 1000,
+                budgetMax: 2500,
+                experience: 'intermediate',
+                duration: 'medium',
+                skills: ['JavaScript', 'React', 'Node.js', 'Firebase', 'CSS'],
+                location: 'Remote',
+                status: 'active',
+                clientId: talentSync.currentUser.id,
+                clientName: talentSync.currentUser.fullName,
+                clientAvatar: talentSync.currentUser.profile.avatar,
+                clientRating: 4.8,
+                clientJobsPosted: 12,
+                proposals: 0,
+                postedDate: new Date().toISOString()
+            };
+            
+            try {
+                const result = await firebaseService.saveJob(jobData);
+                if (result.success) {
+                    demoJobId = result.id;
+                    showStatus('job-creation-status', `✅ Job created successfully!<br>Job ID: ${demoJobId}<br>Title: ${jobData.title}`, 'success');
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('Job creation failed:', error);
+                showStatus('job-creation-status', `❌ Job creation failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function loadJobsFromDashboard() {
+            console.log('Loading jobs from dashboard...');
+            showStatus('jobs-display', 'Loading jobs from dashboard...', 'info');
+            
+            if (!dashboard) {
+                showStatus('jobs-display', '❌ Dashboard not available', 'error');
+                return;
+            }
+            
+            try {
+                // Use the dashboard's loadClientJobs method
+                await dashboard.loadClientJobs();
+                
+                // Get the jobs grid element
+                const jobsGrid = document.getElementById('jobs-grid');
+                if (jobsGrid && jobsGrid.innerHTML.trim()) {
+                    // Copy the jobs to our display area
+                    const jobsDisplay = document.getElementById('jobs-display');
+                    jobsDisplay.innerHTML = `
+                        <div class="status success">✅ Jobs loaded successfully from dashboard!</div>
+                        <div style="margin-top: 15px;">
+                            <h4>Your Posted Jobs:</h4>
+                            ${jobsGrid.innerHTML}
+                        </div>
+                    `;
+                    
+                    // Add management test buttons
+                    const manageButtons = document.querySelectorAll('#jobs-display .btn-primary');
+                    manageButtons.forEach(button => {
+                        if (button.textContent.includes('Manage')) {
+                            button.style.background = '#28a745';
+                            button.innerHTML = '<i class="fas fa-cog"></i> Test Management';
+                        }
+                    });
+                    
+                } else {
+                    showStatus('jobs-display', '✅ Dashboard loaded, but no jobs found. Create a job first.', 'info');
+                }
+                
+            } catch (error) {
+                console.error('Loading jobs failed:', error);
+                showStatus('jobs-display', `❌ Loading jobs failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-setup when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                console.log('Auto-setting up demo...');
+                setupDemo();
+            }, 1000);
+        });
+        
+        // Override console.error to catch any errors
+        const originalConsoleError = console.error;
+        console.error = function(...args) {
+            originalConsoleError.apply(console, args);
+            
+            // Show errors in the UI
+            const errorMessage = args.join(' ');
+            if (errorMessage.includes('manageJob') || errorMessage.includes('modal')) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'status error';
+                errorDiv.innerHTML = `🚨 Error detected: ${errorMessage}`;
+                document.body.appendChild(errorDiv);
+            }
+        };
+    </script>
+</body>
+</html>

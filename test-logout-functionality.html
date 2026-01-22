@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Logout Functionality - TalentSync</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
+    <style>
+        body { padding: 20px; font-family: Arial, sans-serif; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .test-button { margin: 5px; padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .test-button:hover { background: #0056b3; }
+        .test-button.logout { background: #dc3545; }
+        .test-button.logout:hover { background: #c82333; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .user-info { background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Logout Functionality Test</h1>
+    
+    <div class="test-section">
+        <h2>Current User Status</h2>
+        <div id="user-status" class="user-info">
+            <div id="current-user-display">No user logged in</div>
+        </div>
+        <button onclick="checkUserStatus()" class="test-button">Refresh User Status</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Login Test User</h2>
+        <p>First, let's create a test user to test logout functionality:</p>
+        <button onclick="loginTestUser()" class="test-button">Login Test User</button>
+        <div id="login-status"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test Logout Functions</h2>
+        <p>Test logout from different contexts:</p>
+        <button onclick="testTalentSyncLogout()" class="test-button logout">Test TalentSync Logout</button>
+        <button onclick="testDashboardLogout()" class="test-button logout">Test Dashboard Logout</button>
+        <button onclick="testDirectLogout()" class="test-button logout">Test Direct Logout</button>
+        <div id="logout-status"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test Navigation</h2>
+        <p>Test navigation to different pages and logout from there:</p>
+        <button onclick="testLogoutFromDashboard()" class="test-button">Test Logout from Dashboard</button>
+        <button onclick="testLogoutFromBrowseJobs()" class="test-button">Test Logout from Browse Jobs</button>
+        <button onclick="testLogoutFromFreelancers()" class="test-button">Test Logout from Freelancers</button>
+        <div id="navigation-status"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="test-results"></div>
+    </div>
+    
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+    
+    <script>
+        function showStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function checkUserStatus() {
+            const currentUser = talentSync ? talentSync.currentUser : null;
+            const sessionUser = sessionStorage.getItem('currentUser');
+            const localUser = localStorage.getItem('currentUser');
+            
+            const statusHTML = `
+                <div><strong>TalentSync Current User:</strong> ${currentUser ? currentUser.fullName + ' (' + currentUser.role + ')' : 'None'}</div>
+                <div><strong>Session Storage:</strong> ${sessionUser ? 'User data present' : 'Empty'}</div>
+                <div><strong>Local Storage:</strong> ${localUser ? 'User data present' : 'Empty'}</div>
+                <div><strong>Firebase Auth:</strong> ${firebaseService && firebaseService.auth && firebaseService.auth.currentUser ? 'Authenticated' : 'Not authenticated'}</div>
+            `;
+            
+            document.getElementById('current-user-display').innerHTML = statusHTML;
+        }
+        
+        function loginTestUser() {
+            showStatus('login-status', 'Creating test user...', 'info');
+            
+            const testUser = {
+                id: 'test-user-' + Date.now(),
+                uid: 'test-user-' + Date.now(),
+                fullName: 'Test User',
+                email: 'test@example.com',
+                role: 'client',
+                profile: {
+                    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
+                }
+            };
+            
+            // Set user in all storage locations
+            if (talentSync) {
+                talentSync.currentUser = testUser;
+            }
+            sessionStorage.setItem('currentUser', JSON.stringify(testUser));
+            localStorage.setItem('currentUser', JSON.stringify(testUser));
+            
+            showStatus('login-status', '✅ Test user logged in successfully!', 'success');
+            checkUserStatus();
+        }
+        
+        function testTalentSyncLogout() {
+            showStatus('logout-status', 'Testing TalentSync logout...', 'info');
+            
+            if (typeof talentSync !== 'undefined' && typeof talentSync.logout === 'function') {
+                // Override confirm to auto-accept for testing
+                const originalConfirm = window.confirm;
+                window.confirm = () => true;
+                
+                try {
+                    talentSync.logout();
+                    showStatus('logout-status', '✅ TalentSync logout function called successfully!', 'success');
+                } catch (error) {
+                    showStatus('logout-status', `❌ TalentSync logout error: ${error.message}`, 'error');
+                } finally {
+                    // Restore original confirm
+                    window.confirm = originalConfirm;
+                }
+            } else {
+                showStatus('logout-status', '❌ TalentSync logout function not available', 'error');
+            }
+            
+            setTimeout(checkUserStatus, 1000);
+        }
+        
+        function testDashboardLogout() {
+            showStatus('logout-status', 'Testing Dashboard logout...', 'info');
+            
+            if (typeof dashboard !== 'undefined' && typeof dashboard.logout === 'function') {
+                // Override confirm to auto-accept for testing
+                const originalConfirm = window.confirm;
+                window.confirm = () => true;
+                
+                try {
+                    dashboard.logout();
+                    showStatus('logout-status', '✅ Dashboard logout function called successfully!', 'success');
+                } catch (error) {
+                    showStatus('logout-status', `❌ Dashboard logout error: ${error.message}`, 'error');
+                } finally {
+                    // Restore original confirm
+                    window.confirm = originalConfirm;
+                }
+            } else {
+                showStatus('logout-status', '❌ Dashboard logout function not available (normal on this page)', 'info');
+            }
+            
+            setTimeout(checkUserStatus, 1000);
+        }
+        
+        function testDirectLogout() {
+            showStatus('logout-status', 'Testing direct logout...', 'info');
+            
+            try {
+                // Clear user data directly
+                if (talentSync) {
+                    talentSync.currentUser = null;
+                }
+                sessionStorage.removeItem('currentUser');
+                localStorage.removeItem('currentUser');
+                
+                // Sign out from Firebase if available
+                if (firebaseService && firebaseService.signOut) {
+                    firebaseService.signOut().then(() => {
+                        console.log('Firebase logout successful');
+                    }).catch((error) => {
+                        console.error('Firebase logout error:', error);
+                    });
+                }
+                
+                showStatus('logout-status', '✅ Direct logout completed successfully!', 'success');
+            } catch (error) {
+                showStatus('logout-status', `❌ Direct logout error: ${error.message}`, 'error');
+            }
+            
+            setTimeout(checkUserStatus, 1000);
+        }
+        
+        function testLogoutFromDashboard() {
+            showStatus('navigation-status', 'Opening dashboard in new tab to test logout...', 'info');
+            
+            // Open dashboard in new tab
+            const dashboardWindow = window.open('dashboard.html', '_blank');
+            
+            showStatus('navigation-status', '✅ Dashboard opened in new tab. Test logout from there and verify it redirects to index.html', 'success');
+        }
+        
+        function testLogoutFromBrowseJobs() {
+            showStatus('navigation-status', 'Opening browse jobs in new tab to test logout...', 'info');
+            
+            // Open browse jobs in new tab
+            const browseWindow = window.open('browse-jobs.html', '_blank');
+            
+            showStatus('navigation-status', '✅ Browse Jobs opened in new tab. Test logout from there and verify it redirects to index.html', 'success');
+        }
+        
+        function testLogoutFromFreelancers() {
+            showStatus('navigation-status', 'Opening freelancers in new tab to test logout...', 'info');
+            
+            // Open freelancers in new tab
+            const freelancersWindow = window.open('freelancers.html', '_blank');
+            
+            showStatus('navigation-status', '✅ Freelancers page opened in new tab. Test logout from there and verify it redirects to index.html', 'success');
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                checkUserStatus();
+                
+                // Show initial instructions
+                showStatus('test-results', `
+                    <h4>Logout Test Instructions:</h4>
+                    <ol>
+                        <li>First, click "Login Test User" to create a test user</li>
+                        <li>Test the different logout functions to ensure they clear user data</li>
+                        <li>Test logout from different pages to ensure they redirect to home</li>
+                        <li>Verify that after logout, user data is cleared from all storage locations</li>
+                    </ol>
+                    <p><strong>Expected Behavior:</strong> After logout, user should be redirected to index.html and all user data should be cleared.</p>
+                `, 'info');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

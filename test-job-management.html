@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Job Management - TalentSync</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+    </style>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <h1>TalentSync Job Management Test</h1>
+    
+    <div class="test-section">
+        <h2>Firebase Connection Test</h2>
+        <button onclick="testFirebaseConnection()">Test Firebase Connection</button>
+        <button onclick="createTestJob()">Create Test Job</button>
+        <button onclick="loadClientJobs()">Load Client Jobs</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Job Management Test</h2>
+        <p>Job ID: <input type="text" id="jobIdInput" placeholder="Enter job ID to test" style="width: 300px;"></p>
+        <button onclick="testUpdateJob()">Test Update Job</button>
+        <button onclick="testDeleteJob()">Test Delete Job</button>
+    </div>
+    
+    <div id="logs"></div>
+    
+    <script src="firebase-config.js"></script>
+    
+    <script>
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const logDiv = document.createElement('div');
+            logDiv.className = `log ${type}`;
+            logDiv.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            logs.appendChild(logDiv);
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+        
+        async function testFirebaseConnection() {
+            log('Testing Firebase connection...', 'info');
+            
+            try {
+                if (!firebaseService) {
+                    log('❌ FirebaseService not available', 'error');
+                    return;
+                }
+                
+                if (!firebaseService.db) {
+                    log('❌ Firestore database not available', 'error');
+                    return;
+                }
+                
+                // Test basic Firestore connection
+                const testDoc = await firebaseService.db.collection('test').doc('connection').set({
+                    timestamp: new Date(),
+                    test: true
+                });
+                
+                log('✅ Firebase connection successful', 'success');
+                
+                // Test collections
+                const jobsSnapshot = await firebaseService.db.collection('jobs').limit(1).get();
+                log(`📊 Jobs collection size: ${jobsSnapshot.size}`, 'info');
+                
+            } catch (error) {
+                log(`❌ Firebase connection failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function createTestJob() {
+            log('Creating test job...', 'info');
+            
+            try {
+                if (!firebaseService || !firebaseService.saveJob) {
+                    log('❌ FirebaseService or saveJob not available', 'error');
+                    return;
+                }
+                
+                const testJob = {
+                    title: 'Test Job for Management - ' + Date.now(),
+                    description: 'This is a test job created for testing job management functionality.',
+                    category: 'web-development',
+                    budgetType: 'fixed',
+                    budgetMin: 1000,
+                    budgetMax: 2000,
+                    experience: 'intermediate',
+                    duration: 'medium',
+                    skills: ['JavaScript', 'React', 'Node.js'],
+                    location: 'Remote',
+                    status: 'active',
+                    clientId: 'test-client-123',
+                    clientName: 'Test Client',
+                    clientAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=60&h=60&fit=crop&crop=face',
+                    clientRating: 4.5,
+                    clientJobsPosted: 5,
+                    proposals: 0,
+                    postedDate: new Date().toISOString()
+                };
+                
+                const result = await firebaseService.saveJob(testJob);
+                
+                if (result.success) {
+                    log(`✅ Test job created successfully with ID: ${result.id}`, 'success');
+                    document.getElementById('jobIdInput').value = result.id;
+                } else {
+                    log(`❌ Failed to create test job: ${result.error}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Test job creation failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function loadClientJobs() {
+            log('Loading client jobs...', 'info');
+            
+            try {
+                if (!firebaseService || !firebaseService.loadJobs) {
+                    log('❌ FirebaseService or loadJobs not available', 'error');
+                    return;
+                }
+                
+                const result = await firebaseService.loadJobs({
+                    clientId: 'test-client-123'
+                });
+                
+                if (result.success) {
+                    log(`✅ Successfully loaded ${result.data.length} client jobs`, 'success');
+                    
+                    // Display first few jobs
+                    result.data.slice(0, 3).forEach((job, index) => {
+                        log(`📋 Job ${index + 1}: "${job.title}" (ID: ${job.id}) - Status: ${job.status}`, 'info');
+                    });
+                } else {
+                    log(`❌ Failed to load client jobs: ${result.error}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Client jobs loading failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testUpdateJob() {
+            const jobId = document.getElementById('jobIdInput').value.trim();
+            if (!jobId) {
+                log('❌ Please enter a job ID to test update', 'error');
+                return;
+            }
+            
+            log(`Testing job update for ID: ${jobId}...`, 'info');
+            
+            try {
+                if (!firebaseService || !firebaseService.updateJob) {
+                    log('❌ FirebaseService or updateJob not available', 'error');
+                    return;
+                }
+                
+                const updates = {
+                    title: 'Updated Test Job - ' + Date.now(),
+                    description: 'This job has been updated via the test interface.',
+                    status: 'in-review',
+                    budgetMin: 1500,
+                    budgetMax: 2500
+                };
+                
+                const result = await firebaseService.updateJob(jobId, updates);
+                
+                if (result.success) {
+                    log(`✅ Job updated successfully`, 'success');
+                } else {
+                    log(`❌ Failed to update job: ${result.error}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Job update failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testDeleteJob() {
+            const jobId = document.getElementById('jobIdInput').value.trim();
+            if (!jobId) {
+                log('❌ Please enter a job ID to test delete', 'error');
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to delete job ${jobId}? This action cannot be undone.`)) {
+                return;
+            }
+            
+            log(`Testing job deletion for ID: ${jobId}...`, 'info');
+            
+            try {
+                if (!firebaseService || !firebaseService.deleteJob) {
+                    log('❌ FirebaseService or deleteJob not available', 'error');
+                    return;
+                }
+                
+                const result = await firebaseService.deleteJob(jobId);
+                
+                if (result.success) {
+                    log(`✅ Job deleted successfully`, 'success');
+                    document.getElementById('jobIdInput').value = '';
+                } else {
+                    log(`❌ Failed to delete job: ${result.error}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Job deletion failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-test when page loads
+        window.addEventListener('load', () => {
+            log('🚀 Job Management test page loaded', 'info');
+            
+            // Wait a bit for Firebase to initialize
+            setTimeout(() => {
+                testFirebaseConnection();
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

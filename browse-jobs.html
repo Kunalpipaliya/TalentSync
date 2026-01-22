@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Jobs - TalentSync</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="browse-jobs.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-handshake"></i>
+                <span>TalentSync</span>
+            </div>
+            
+            <div class="nav-menu" id="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="browse-jobs.html" class="nav-link active">Browse Jobs</a>
+                <a href="freelancers.html" class="nav-link">Find Talent</a>
+                <a href="messages.html" class="nav-link">Messages</a>
+            </div>
+            
+            <div class="nav-actions" id="nav-actions">
+                <button class="theme-toggle" id="theme-toggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <!-- User-specific content will be populated by JavaScript -->
+            </div>
+            
+            <div class="nav-toggle" id="nav-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Hero Section -->
+        <section class="jobs-hero">
+            <div class="container">
+                <h1>Find Your Next Opportunity</h1>
+                <p>Discover thousands of projects from clients worldwide</p>
+                
+                <!-- Search Bar -->
+                <div class="search-section">
+                    <div class="search-bar">
+                        <div class="search-input-group">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="job-search" placeholder="Search for jobs, skills, or keywords...">
+                        </div>
+                        <div class="location-input-group">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <input type="text" id="location-search" placeholder="Location (optional)">
+                        </div>
+                        <button class="btn btn-primary search-btn" onclick="jobBrowser.performSearch()">
+                            Search Jobs
+                        </button>
+                    </div>
+                    
+                    <!-- Quick Filters -->
+                    <div class="quick-filters">
+                        <button class="filter-tag active" data-filter="all">All Jobs</button>
+                        <button class="filter-tag" data-filter="web-development">Web Development</button>
+                        <button class="filter-tag" data-filter="mobile-development">Mobile Development</button>
+                        <button class="filter-tag" data-filter="design">Design</button>
+                        <button class="filter-tag" data-filter="writing">Writing</button>
+                        <button class="filter-tag" data-filter="marketing">Marketing</button>
+                        <button class="filter-tag" data-filter="video-editing">Video & Animation</button>
+                        <button class="filter-tag" data-filter="data-science">Data Science</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Jobs Content -->
+        <section class="jobs-content">
+            <div class="container">
+                <div class="jobs-layout">
+                    <!-- Sidebar Filters -->
+                    <aside class="jobs-sidebar">
+                        <div class="filter-section">
+                            <h3>Filters</h3>
+                            <button class="btn btn-outline btn-sm" onclick="jobBrowser.clearFilters()">
+                                Clear All
+                            </button>
+                        </div>
+
+                        <!-- Category Filter -->
+                        <div class="filter-group">
+                            <h4>Category</h4>
+                            <div class="filter-options" id="category-filters">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <!-- Budget Filter -->
+                        <div class="filter-group">
+                            <h4>Budget Range</h4>
+                            <div class="filter-options">
+                                <label class="filter-option">
+                                    <input type="checkbox" name="budget" value="0-500">
+                                    <span>$0 - $500</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="budget" value="500-1000">
+                                    <span>$500 - $1,000</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="budget" value="1000-5000">
+                                    <span>$1,000 - $5,000</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="budget" value="5000+">
+                                    <span>$5,000+</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Experience Level -->
+                        <div class="filter-group">
+                            <h4>Experience Level</h4>
+                            <div class="filter-options">
+                                <label class="filter-option">
+                                    <input type="checkbox" name="experience" value="entry">
+                                    <span>Entry Level</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="experience" value="intermediate">
+                                    <span>Intermediate</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="experience" value="expert">
+                                    <span>Expert</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Project Length -->
+                        <div class="filter-group">
+                            <h4>Project Length</h4>
+                            <div class="filter-options">
+                                <label class="filter-option">
+                                    <input type="checkbox" name="duration" value="short">
+                                    <span>Less than 1 month</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="duration" value="medium">
+                                    <span>1-3 months</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="duration" value="long">
+                                    <span>3+ months</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Job Type -->
+                        <div class="filter-group">
+                            <h4>Job Type</h4>
+                            <div class="filter-options">
+                                <label class="filter-option">
+                                    <input type="checkbox" name="type" value="fixed">
+                                    <span>Fixed Price</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="type" value="hourly">
+                                    <span>Hourly</span>
+                                </label>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <!-- Jobs List -->
+                    <main class="jobs-main">
+                        <!-- Results Header -->
+                        <div class="results-header">
+                            <div class="results-info">
+                                <h2 id="results-count">Loading jobs...</h2>
+                                <p id="results-description">Finding the best opportunities for you</p>
+                            </div>
+                            <div class="sort-options">
+                                <label>Sort by:</label>
+                                <select id="sort-select" onchange="jobBrowser.sortJobs(this.value)">
+                                    <option value="newest">Newest First</option>
+                                    <option value="budget-high">Highest Budget</option>
+                                    <option value="budget-low">Lowest Budget</option>
+                                    <option value="proposals">Fewest Proposals</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Jobs Grid -->
+                        <div class="jobs-grid" id="jobs-grid">
+                            <!-- Jobs will be populated by JavaScript -->
+                        </div>
+
+                        <!-- Load More -->
+                        <div class="load-more-section">
+                            <button class="btn btn-outline" id="load-more-btn" onclick="jobBrowser.loadMoreJobs()">
+                                Load More Jobs
+                            </button>
+                        </div>
+                    </main>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Job Detail Modal -->
+    <div id="job-modal" class="modal-overlay">
+        <div class="modal job-detail-modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="job-modal-title">Job Details</h2>
+                <button class="modal-close" onclick="jobBrowser.closeJobModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="job-modal-content">
+                <!-- Job details will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Proposal Modal -->
+    <div id="proposal-modal" class="modal-overlay">
+        <div class="modal proposal-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Submit Proposal</h2>
+                <button class="modal-close" onclick="jobBrowser.closeProposalModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="proposal-form" onsubmit="jobBrowser.submitProposal(event)">
+                    <div class="form-group">
+                        <label class="form-label">Cover Letter</label>
+                        <textarea class="form-input" name="coverLetter" rows="6" 
+                                placeholder="Explain why you're the best fit for this project..." required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Your Bid</label>
+                        <div class="bid-input-group">
+                            <span class="currency">$</span>
+                            <input type="number" class="form-input" name="bidAmount" 
+                                   placeholder="0.00" min="5" step="0.01" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Delivery Time</label>
+                        <select class="form-input" name="deliveryTime" required>
+                            <option value="">Select delivery time</option>
+                            <option value="1-3">1-3 days</option>
+                            <option value="4-7">4-7 days</option>
+                            <option value="1-2-weeks">1-2 weeks</option>
+                            <option value="2-4-weeks">2-4 weeks</option>
+                            <option value="1-2-months">1-2 months</option>
+                            <option value="2-3-months">2-3 months</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Questions for Client (Optional)</label>
+                        <textarea class="form-input" name="questions" rows="3" 
+                                placeholder="Any questions about the project requirements?"></textarea>
+                    </div>
+                    
+                    <div class="proposal-summary">
+                        <h4>Proposal Summary</h4>
+                        <div class="summary-item">
+                            <span>Your bid:</span>
+                            <span id="bid-summary">$0.00</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>TalentSync fee (10%):</span>
+                            <span id="fee-summary">$0.00</span>
+                        </div>
+                        <div class="summary-item total">
+                            <span>You'll receive:</span>
+                            <span id="receive-summary">$0.00</span>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        Submit Proposal
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-brand">
+                        <i class="fas fa-handshake"></i>
+                        <span>TalentSync</span>
+                    </div>
+                    <p>The world's largest freelancing marketplace connecting businesses with talented professionals.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>For Clients</h4>
+                    <ul>
+                        <li><a href="freelancers.html">Find Freelancers</a></li>
+                        <li><a href="post-job.html">Post a Job</a></li>
+                        <li><a href="index.html#how-it-works">How it Works</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>For Freelancers</h4>
+                    <ul>
+                        <li><a href="browse-jobs.html">Find Work</a></li>
+                        <li><a href="dashboard.html">Create Profile</a></li>
+                        <li><a href="index.html#testimonials">Success Stories</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Support</h4>
+                    <ul>
+                        <li><a href="javascript:void(0)" onclick="showHelpCenter()">Help Center</a></li>
+                        <li><a href="javascript:void(0)" onclick="showContactUs()">Contact Us</a></li>
+                        <li><a href="javascript:void(0)" onclick="showTrustSafety()">Trust & Safety</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 TalentSync. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="https://facebook.com" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook"></i></a>
+                    <a href="https://twitter.com" target="_blank" rel="noopener noreferrer"><i class="fab fa-twitter"></i></a>
+                    <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer"><i class="fab fa-linkedin"></i></a>
+                    <a href="https://instagram.com" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Main Modal Overlay -->
+    <div id="modal-overlay" class="modal-overlay"></div>
+    
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+    
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="loading-spinner">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+    <script src="browse-jobs.js"></script>
+
+    <script>
+        // Global footer functions for pages that don't have talentSync loaded
+        function showHelpCenter() {
+            if (typeof talentSync !== 'undefined') {
+                talentSync.showHelpCenter();
+            } else {
+                alert('Help Center: Please contact support@talentsync.com for assistance.');
+            }
+        }
+
+        function showContactUs() {
+            if (typeof talentSync !== 'undefined') {
+                talentSync.showContactUs();
+            } else {
+                alert('Contact Us: Email support@talentsync.com or call 1-800-TALENT-1');
+            }
+        }
+
+        function showTrustSafety() {
+            if (typeof talentSync !== 'undefined') {
+                talentSync.showTrustSafety();
+            } else {
+                alert('Trust & Safety: TalentSync is committed to providing a safe platform. Contact support for any safety concerns.');
+            }
+        }
+    </script>
+</body>
+</html>

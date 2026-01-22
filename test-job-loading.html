@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Job Loading - TalentSync</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <h1>TalentSync Job Loading Test</h1>
+    
+    <div>
+        <button onclick="testFirebaseConnection()">Test Firebase Connection</button>
+        <button onclick="createDemoData()">Create Demo Data</button>
+        <button onclick="loadJobs()">Load Jobs</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+    
+    <div id="logs"></div>
+    
+    <script src="firebase-config.js"></script>
+    
+    <script>
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const logDiv = document.createElement('div');
+            logDiv.className = `log ${type}`;
+            logDiv.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            logs.appendChild(logDiv);
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+        
+        async function testFirebaseConnection() {
+            log('Testing Firebase connection...', 'info');
+            
+            try {
+                if (!firebaseService) {
+                    log('❌ FirebaseService not available', 'error');
+                    return;
+                }
+                
+                if (!firebaseService.db) {
+                    log('❌ Firestore database not available', 'error');
+                    return;
+                }
+                
+                // Test basic Firestore connection
+                const testDoc = await firebaseService.db.collection('test').doc('connection').set({
+                    timestamp: new Date(),
+                    test: true
+                });
+                
+                log('✅ Firebase connection successful', 'success');
+                
+                // Test collections
+                const jobsSnapshot = await firebaseService.db.collection('jobs').limit(1).get();
+                log(`📊 Jobs collection size: ${jobsSnapshot.size}`, 'info');
+                
+                const freelancersSnapshot = await firebaseService.db.collection('freelancers').limit(1).get();
+                log(`👥 Freelancers collection size: ${freelancersSnapshot.size}`, 'info');
+                
+            } catch (error) {
+                log(`❌ Firebase connection failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function createDemoData() {
+            log('Creating demo data...', 'info');
+            
+            try {
+                if (!firebaseService || !firebaseService.initializeDemoData) {
+                    log('❌ FirebaseService or initializeDemoData not available', 'error');
+                    return;
+                }
+                
+                await firebaseService.initializeDemoData();
+                log('✅ Demo data creation completed', 'success');
+                
+                // Verify data was created
+                const jobsSnapshot = await firebaseService.db.collection('jobs').get();
+                log(`📊 Jobs created: ${jobsSnapshot.size}`, 'success');
+                
+                const freelancersSnapshot = await firebaseService.db.collection('freelancers').get();
+                log(`👥 Freelancers created: ${freelancersSnapshot.size}`, 'success');
+                
+            } catch (error) {
+                log(`❌ Demo data creation failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function loadJobs() {
+            log('Loading jobs from Firebase...', 'info');
+            
+            try {
+                if (!firebaseService || !firebaseService.loadJobs) {
+                    log('❌ FirebaseService or loadJobs not available', 'error');
+                    return;
+                }
+                
+                const result = await firebaseService.loadJobs();
+                
+                if (result.success) {
+                    log(`✅ Successfully loaded ${result.data.length} jobs`, 'success');
+                    
+                    // Display first few jobs
+                    result.data.slice(0, 3).forEach((job, index) => {
+                        log(`📋 Job ${index + 1}: "${job.title}" - ${job.category} - Budget: $${job.budgetMin}-${job.budgetMax}`, 'info');
+                    });
+                } else {
+                    log(`❌ Failed to load jobs: ${result.error}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Job loading failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-test when page loads
+        window.addEventListener('load', () => {
+            log('🚀 Test page loaded', 'info');
+            
+            // Wait a bit for Firebase to initialize
+            setTimeout(() => {
+                testFirebaseConnection();
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages - TalentSync</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="messages.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-handshake"></i>
+                <span>TalentSync</span>
+            </div>
+            
+            <div class="nav-menu" id="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="browse-jobs.html" class="nav-link">Browse Jobs</a>
+                <a href="freelancers.html" class="nav-link">Find Talent</a>
+                <a href="messages.html" class="nav-link active">Messages</a>
+            </div>
+            
+            <div class="nav-actions" id="nav-actions">
+                <button class="theme-toggle" id="theme-toggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <!-- User-specific content will be populated by JavaScript -->
+            </div>
+            
+            <div class="nav-toggle" id="nav-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Messages Container -->
+    <div class="messages-container">
+        <!-- Conversations Sidebar -->
+        <aside class="conversations-sidebar">
+            <div class="sidebar-header">
+                <h2>Messages</h2>
+                <button class="btn btn-primary btn-sm" onclick="messageApp.showNewMessageModal()">
+                    <i class="fas fa-plus"></i> New
+                </button>
+            </div>
+            
+            <div class="search-conversations">
+                <div class="search-input-group">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="conversation-search" placeholder="Search conversations...">
+                </div>
+            </div>
+            
+            <div class="conversations-list" id="conversations-list">
+                <!-- Conversations will be populated by JavaScript -->
+            </div>
+        </aside>
+
+        <!-- Chat Area -->
+        <main class="chat-area">
+            <!-- No Conversation Selected -->
+            <div class="no-conversation" id="no-conversation">
+                <div class="no-conversation-content">
+                    <i class="fas fa-comments"></i>
+                    <h3>Select a conversation</h3>
+                    <p>Choose a conversation from the sidebar to start messaging</p>
+                    <button class="btn btn-primary" onclick="messageApp.showNewMessageModal()">
+                        Start New Conversation
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active Chat -->
+            <div class="active-chat" id="active-chat" style="display: none;">
+                <!-- Chat Header -->
+                <div class="chat-header">
+                    <div class="chat-user-info">
+                        <div class="chat-avatar">
+                            <img id="chat-user-avatar" src="" alt="User Avatar">
+                            <div class="online-status" id="chat-user-status"></div>
+                        </div>
+                        <div class="chat-user-details">
+                            <h3 id="chat-user-name"></h3>
+                            <p id="chat-user-title"></p>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-actions">
+                        <button class="btn btn-outline btn-sm" onclick="messageApp.showUserProfile()">
+                            <i class="fas fa-user"></i> Profile
+                        </button>
+                        <button class="btn btn-outline btn-sm" onclick="messageApp.toggleChatOptions()">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Messages Area -->
+                <div class="messages-area" id="messages-area">
+                    <div class="messages-list" id="messages-list">
+                        <!-- Messages will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Message Input -->
+                <div class="message-input-area">
+                    <form id="message-form">
+                        <div class="message-input-group">
+                            <button type="button" class="attachment-btn" onclick="messageApp.showAttachmentOptions()">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            <input type="text" id="message-input" placeholder="Type your message..." autocomplete="off">
+                            <button type="button" class="emoji-btn" onclick="messageApp.showEmojiPicker()">
+                                <i class="fas fa-smile"></i>
+                            </button>
+                            <button type="submit" class="send-btn">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Typing Indicator -->
+                    <div class="typing-indicator" id="typing-indicator" style="display: none;">
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                        <span class="typing-text">Someone is typing...</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- New Message Modal -->
+    <div id="new-message-modal" class="modal-overlay">
+        <div class="modal new-message-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">New Message</h2>
+                <button class="modal-close" onclick="messageApp.closeNewMessageModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="new-message-form">
+                    <div class="form-group">
+                        <label class="form-label">To:</label>
+                        <div class="user-search-container">
+                            <input type="text" class="form-input" id="user-search" 
+                                   placeholder="Search for users..." autocomplete="off">
+                            <div class="user-search-results" id="user-search-results">
+                                <!-- Search results will be populated here -->
+                            </div>
+                        </div>
+                        <input type="hidden" id="selected-user-id" name="userId" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Subject (Optional):</label>
+                        <input type="text" class="form-input" name="subject" 
+                               placeholder="Enter message subject...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Message:</label>
+                        <textarea class="form-input" name="message" rows="4" 
+                                placeholder="Type your message..." required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        Send Message
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attachment Options Modal -->
+    <div id="attachment-modal" class="modal-overlay">
+        <div class="modal attachment-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Send Attachment</h2>
+                <button class="modal-close" onclick="messageApp.closeAttachmentModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="attachment-options">
+                    <div class="attachment-option" onclick="messageApp.selectAttachmentType('image')">
+                        <i class="fas fa-image"></i>
+                        <span>Image</span>
+                    </div>
+                    <div class="attachment-option" onclick="messageApp.selectAttachmentType('document')">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Document</span>
+                    </div>
+                    <div class="attachment-option" onclick="messageApp.selectAttachmentType('video')">
+                        <i class="fas fa-video"></i>
+                        <span>Video</span>
+                    </div>
+                </div>
+                
+                <div class="file-upload-area" id="file-upload-area" style="display: none;">
+                    <input type="file" id="file-input" accept="" style="display: none;">
+                    <div class="upload-dropzone" onclick="document.getElementById('file-input').click()">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Click to select file or drag and drop</p>
+                        <small>Maximum file size: 10MB</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Profile Modal -->
+    <div id="user-profile-modal" class="modal-overlay">
+        <div class="modal user-profile-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">User Profile</h2>
+                <button class="modal-close" onclick="messageApp.closeUserProfileModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="user-profile-content">
+                <!-- User profile content will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Modal Overlay (for talentSync.showModal) -->
+    <div id="modal-overlay" class="modal-overlay"></div>
+    
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+    
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="loading-spinner">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+    <script src="messages.js"></script>
+</body>
+</html>

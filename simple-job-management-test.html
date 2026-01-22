@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Job Management Test</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body style="padding: 20px;">
+    <h1>Simple Job Management Test</h1>
+    
+    <div style="margin: 20px 0;">
+        <h2>Step 1: Initialize System</h2>
+        <button onclick="initializeSystem()" class="btn btn-primary">Initialize System</button>
+        <div id="init-status"></div>
+    </div>
+    
+    <div style="margin: 20px 0;">
+        <h2>Step 2: Create Test Job</h2>
+        <button onclick="createSimpleTestJob()" class="btn btn-success">Create Test Job</button>
+        <div id="job-status"></div>
+    </div>
+    
+    <div style="margin: 20px 0;">
+        <h2>Step 3: Test Job Management</h2>
+        <button onclick="testJobManagement()" class="btn btn-warning">Test Job Management</button>
+        <div id="management-status"></div>
+    </div>
+    
+    <div style="margin: 20px 0;">
+        <h2>Console Output</h2>
+        <div id="console-output" style="background: #f5f5f5; padding: 10px; border-radius: 5px; max-height: 300px; overflow-y: auto;"></div>
+    </div>
+    
+    <!-- Modal Overlay -->
+    <div id="modal-overlay" class="modal-overlay"></div>
+    
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+    <script src="dashboard.js"></script>
+    
+    <script>
+        let testJobId = null;
+        
+        function logToConsole(message) {
+            const output = document.getElementById('console-output');
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            output.appendChild(logEntry);
+            output.scrollTop = output.scrollHeight;
+            console.log(message);
+        }
+        
+        function initializeSystem() {
+            logToConsole('Initializing system...');
+            
+            // Set up a mock user
+            const mockUser = {
+                id: 'test-client-123',
+                uid: 'test-client-123',
+                fullName: 'Test Client',
+                email: 'test@example.com',
+                role: 'client',
+                profile: {
+                    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
+                }
+            };
+            
+            if (typeof talentSync !== 'undefined') {
+                talentSync.currentUser = mockUser;
+                logToConsole('✅ Mock user set successfully');
+                document.getElementById('init-status').innerHTML = '<div style="color: green;">✅ System initialized with mock user</div>';
+            } else {
+                logToConsole('❌ TalentSync not available');
+                document.getElementById('init-status').innerHTML = '<div style="color: red;">❌ TalentSync not available</div>';
+            }
+            
+            // Check Firebase
+            if (typeof firebaseService !== 'undefined' && firebaseService.db) {
+                logToConsole('✅ Firebase service available');
+            } else {
+                logToConsole('❌ Firebase service not available');
+            }
+            
+            // Check Dashboard
+            if (typeof dashboard !== 'undefined') {
+                logToConsole('✅ Dashboard object available');
+                logToConsole('Dashboard methods: ' + Object.getOwnPropertyNames(Object.getPrototypeOf(dashboard)).join(', '));
+            } else {
+                logToConsole('❌ Dashboard object not available');
+            }
+        }
+        
+        async function createSimpleTestJob() {
+            logToConsole('Creating simple test job...');
+            
+            if (!firebaseService || !firebaseService.saveJob) {
+                logToConsole('❌ Firebase service not available');
+                document.getElementById('job-status').innerHTML = '<div style="color: red;">❌ Firebase service not available</div>';
+                return;
+            }
+            
+            if (!talentSync || !talentSync.currentUser) {
+                logToConsole('❌ No authenticated user');
+                document.getElementById('job-status').innerHTML = '<div style="color: red;">❌ No authenticated user</div>';
+                return;
+            }
+            
+            const testJob = {
+                title: 'Simple Test Job - ' + Date.now(),
+                description: 'A simple test job for debugging purposes.',
+                category: 'web-development',
+                budgetType: 'fixed',
+                budgetMin: 500,
+                budgetMax: 1000,
+                experience: 'intermediate',
+                duration: 'short',
+                skills: ['JavaScript', 'HTML', 'CSS'],
+                location: 'Remote',
+                status: 'active',
+                clientId: talentSync.currentUser.id,
+                clientName: talentSync.currentUser.fullName,
+                proposals: 0,
+                postedDate: new Date().toISOString()
+            };
+            
+            try {
+                const result = await firebaseService.saveJob(testJob);
+                if (result.success) {
+                    testJobId = result.id;
+                    logToConsole(`✅ Test job created with ID: ${testJobId}`);
+                    document.getElementById('job-status').innerHTML = `<div style="color: green;">✅ Job created successfully<br>ID: ${testJobId}</div>`;
+                } else {
+                    logToConsole(`❌ Failed to create job: ${result.error}`);
+                    document.getElementById('job-status').innerHTML = `<div style="color: red;">❌ Failed to create job: ${result.error}</div>`;
+                }
+            } catch (error) {
+                logToConsole(`❌ Error creating job: ${error.message}`);
+                document.getElementById('job-status').innerHTML = `<div style="color: red;">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        function testJobManagement() {
+            logToConsole('Testing job management...');
+            
+            if (!testJobId) {
+                logToConsole('❌ No test job ID available');
+                document.getElementById('management-status').innerHTML = '<div style="color: red;">❌ No test job available. Create a job first.</div>';
+                return;
+            }
+            
+            if (!dashboard || typeof dashboard.manageJob !== 'function') {
+                logToConsole('❌ Dashboard.manageJob not available');
+                document.getElementById('management-status').innerHTML = '<div style="color: red;">❌ Dashboard.manageJob not available</div>';
+                return;
+            }
+            
+            try {
+                logToConsole(`Calling dashboard.manageJob with ID: ${testJobId}`);
+                dashboard.manageJob(testJobId);
+                logToConsole('✅ dashboard.manageJob called successfully');
+                document.getElementById('management-status').innerHTML = '<div style="color: green;">✅ Job management function called successfully</div>';
+            } catch (error) {
+                logToConsole(`❌ Error calling manageJob: ${error.message}`);
+                document.getElementById('management-status').innerHTML = `<div style="color: red;">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-initialize when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                logToConsole('Page loaded, auto-initializing...');
+                initializeSystem();
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

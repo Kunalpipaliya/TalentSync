@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Job Management Test</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body style="padding: 20px; font-family: Arial, sans-serif;">
+    <h1>Minimal Job Management Test</h1>
+    
+    <div style="margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px;">
+        <h3>Test Job Card</h3>
+        <div class="job-card" style="max-width: 500px;">
+            <div class="job-card-header">
+                <div>
+                    <h3 class="job-card-title">Test Job for Management</h3>
+                    <div class="job-card-meta">
+                        <span><i class="fas fa-paper-plane"></i> 0 proposals</span>
+                        <span><i class="fas fa-calendar"></i> Posted: Today</span>
+                    </div>
+                </div>
+                <span class="badge badge-primary">Active</span>
+            </div>
+            <div class="job-card-footer">
+                <span class="job-card-budget">$500 - $1000</span>
+                <div>
+                    <button class="btn btn-outline btn-sm" onclick="testViewJob()">View</button>
+                    <button class="btn btn-primary btn-sm" onclick="testManageJob()">Manage</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div style="margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px;">
+        <h3>Test Results</h3>
+        <div id="test-results" style="background: #f8f9fa; padding: 10px; border-radius: 3px; min-height: 100px;"></div>
+    </div>
+    
+    <!-- Modal Overlay -->
+    <div id="modal-overlay" class="modal-overlay"></div>
+    
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+    <script src="dashboard.js"></script>
+    
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('test-results');
+            const logEntry = document.createElement('div');
+            logEntry.style.margin = '5px 0';
+            logEntry.style.padding = '5px';
+            logEntry.style.borderLeft = `3px solid ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#007bff'}`;
+            logEntry.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            results.appendChild(logEntry);
+            console.log(message);
+        }
+        
+        function testViewJob() {
+            log('Testing viewJob function...');
+            
+            if (typeof dashboard !== 'undefined' && typeof dashboard.viewJob === 'function') {
+                try {
+                    dashboard.viewJob('test-job-123');
+                    log('✅ viewJob function called successfully', 'success');
+                } catch (error) {
+                    log(`❌ Error calling viewJob: ${error.message}`, 'error');
+                }
+            } else {
+                log('❌ dashboard.viewJob not available', 'error');
+            }
+        }
+        
+        function testManageJob() {
+            log('Testing manageJob function...');
+            
+            // First check if all dependencies are available
+            if (typeof dashboard === 'undefined') {
+                log('❌ Dashboard object not found', 'error');
+                return;
+            }
+            
+            if (typeof dashboard.manageJob !== 'function') {
+                log('❌ dashboard.manageJob function not found', 'error');
+                return;
+            }
+            
+            if (typeof talentSync === 'undefined') {
+                log('❌ talentSync object not found', 'error');
+                return;
+            }
+            
+            if (typeof firebaseService === 'undefined') {
+                log('❌ firebaseService object not found', 'error');
+                return;
+            }
+            
+            // Set up mock user if not already set
+            if (!talentSync.currentUser) {
+                talentSync.currentUser = {
+                    id: 'test-client-123',
+                    uid: 'test-client-123',
+                    fullName: 'Test Client',
+                    email: 'test@example.com',
+                    role: 'client'
+                };
+                log('✅ Mock user set up', 'success');
+            }
+            
+            // Test with a mock job ID
+            try {
+                log('Calling dashboard.manageJob with test ID...');
+                dashboard.manageJob('test-job-123');
+                log('✅ manageJob function called successfully', 'success');
+            } catch (error) {
+                log(`❌ Error calling manageJob: ${error.message}`, 'error');
+                log(`Error stack: ${error.stack}`, 'error');
+            }
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                log('🚀 Page loaded, running initial checks...');
+                
+                // Check if all objects are available
+                const checks = [
+                    { name: 'Firebase SDK', check: () => typeof firebase !== 'undefined' },
+                    { name: 'firebaseService', check: () => typeof firebaseService !== 'undefined' },
+                    { name: 'talentSync', check: () => typeof talentSync !== 'undefined' },
+                    { name: 'dashboard', check: () => typeof dashboard !== 'undefined' },
+                    { name: 'dashboard.manageJob', check: () => typeof dashboard !== 'undefined' && typeof dashboard.manageJob === 'function' },
+                    { name: 'talentSync.showModal', check: () => typeof talentSync !== 'undefined' && typeof talentSync.showModal === 'function' }
+                ];
+                
+                checks.forEach(({ name, check }) => {
+                    if (check()) {
+                        log(`✅ ${name} available`, 'success');
+                    } else {
+                        log(`❌ ${name} not available`, 'error');
+                    }
+                });
+                
+                log('Ready for testing. Click the buttons above to test functionality.');
+                
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

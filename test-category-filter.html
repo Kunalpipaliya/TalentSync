@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Category Filter Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .category-card {
+            display: inline-block;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px;
+            cursor: pointer;
+            min-width: 200px;
+            text-align: center;
+        }
+        .category-card:hover {
+            background: #e9ecef;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #17a2b8; }
+        .filter-tag {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 4px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        .filter-tag.active {
+            background: #007bff;
+            color: white;
+        }
+    </style>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Category Filter Test</h1>
+        <p>This page tests the category filtering functionality step by step.</p>
+        
+        <div>
+            <button class="btn" onclick="testCategoryMapping()">Test Category Mapping</button>
+            <button class="btn" onclick="testSessionStorage()">Test Session Storage</button>
+            <button class="btn" onclick="loadTestJobs()">Load Test Jobs</button>
+            <button class="btn" onclick="testFiltering()">Test Filtering</button>
+            <button class="btn" onclick="clearLog()">Clear Log</button>
+        </div>
+        
+        <div id="log" class="log">Click a button above to start testing...\n</div>
+    </div>
+
+    <div class="container">
+        <h2>Categories (Click to Test)</h2>
+        <div id="categories-container">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Filter Tags</h2>
+        <div id="filter-tags-container">
+            <button class="filter-tag active" data-filter="all">All Jobs</button>
+            <button class="filter-tag" data-filter="web-development">Web Development</button>
+            <button class="filter-tag" data-filter="mobile-development">Mobile Development</button>
+            <button class="filter-tag" data-filter="design">Design</button>
+            <button class="filter-tag" data-filter="writing">Writing</button>
+            <button class="filter-tag" data-filter="marketing">Marketing</button>
+            <button class="filter-tag" data-filter="video-editing">Video & Animation</button>
+            <button class="filter-tag" data-filter="data-science">Data Science</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Jobs (<span id="job-count">0</span>)</h2>
+        <div id="jobs-container">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script>
+        let testJobs = [];
+        let filteredJobs = [];
+        let currentFilters = { category: [] };
+
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            logElement.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function testCategoryMapping() {
+            log('Testing category mapping...', 'info');
+            
+            const categories = [
+                'Web Development',
+                'Mobile Development', 
+                'Graphic Design',
+                'Content Writing',
+                'Digital Marketing',
+                'Video & Animation',
+                'Data Science'
+            ];
+            
+            const categoryMapping = {
+                'Web Development': 'web-development',
+                'Mobile Development': 'mobile-development', 
+                'Graphic Design': 'design',
+                'Content Writing': 'writing',
+                'Digital Marketing': 'marketing',
+                'Video & Animation': 'video-editing',
+                'Data Science': 'data-science',
+                'Voice & Audio': 'translation'
+            };
+            
+            categories.forEach(category => {
+                const filterValue = categoryMapping[category] || category.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '');
+                log(`${category} -> ${filterValue}`, 'success');
+            });
+        }
+
+        function testSessionStorage() {
+            log('Testing sessionStorage...', 'info');
+            
+            // Test storing and retrieving
+            sessionStorage.setItem('selectedCategory', 'web-development');
+            const stored = sessionStorage.getItem('selectedCategory');
+            log(`Stored: web-development, Retrieved: ${stored}`, stored === 'web-development' ? 'success' : 'error');
+            
+            // Test with different values
+            const testValues = ['design', 'writing', 'marketing'];
+            testValues.forEach(value => {
+                sessionStorage.setItem('selectedCategory', value);
+                const retrieved = sessionStorage.getItem('selectedCategory');
+                log(`Test ${value}: ${retrieved === value ? 'PASS' : 'FAIL'}`, retrieved === value ? 'success' : 'error');
+            });
+            
+            sessionStorage.removeItem('selectedCategory');
+            log('SessionStorage test completed', 'success');
+        }
+
+        function loadTestJobs() {
+            log('Loading test jobs...', 'info');
+            
+            testJobs = [
+                { id: 1, title: 'React Developer', category: 'web-development', description: 'Build React app' },
+                { id: 2, title: 'iOS App Developer', category: 'mobile-development', description: 'Create iOS app' },
+                { id: 3, title: 'Logo Designer', category: 'design', description: 'Design company logo' },
+                { id: 4, title: 'Content Writer', category: 'writing', description: 'Write blog posts' },
+                { id: 5, title: 'SEO Specialist', category: 'marketing', description: 'Improve SEO' },
+                { id: 6, title: 'Video Editor', category: 'video-editing', description: 'Edit promotional video' },
+                { id: 7, title: 'Data Analyst', category: 'data-science', description: 'Analyze sales data' },
+                { id: 8, title: 'Vue.js Developer', category: 'web-development', description: 'Build Vue app' },
+                { id: 9, title: 'Android Developer', category: 'mobile-development', description: 'Create Android app' },
+                { id: 10, title: 'UI Designer', category: 'design', description: 'Design user interface' }
+            ];
+            
+            filteredJobs = [...testJobs];
+            displayJobs();
+            
+            log(`Loaded ${testJobs.length} test jobs`, 'success');
+            
+            // Show job categories
+            const categories = [...new Set(testJobs.map(j => j.category))];
+            log(`Categories: ${categories.join(', ')}`, 'info');
+        }
+
+        function testFiltering() {
+            log('Testing filtering...', 'info');
+            
+            if (testJobs.length === 0) {
+                log('No jobs loaded. Click "Load Test Jobs" first.', 'error');
+                return;
+            }
+            
+            const testCategories = ['web-development', 'design', 'marketing'];
+            
+            testCategories.forEach(category => {
+                log(`Testing filter: ${category}`, 'info');
+                
+                currentFilters.category = [category];
+                applyFilters();
+                
+                log(`Results: ${filteredJobs.length} jobs`, filteredJobs.length > 0 ? 'success' : 'error');
+                filteredJobs.forEach(job => {
+                    log(`  - ${job.title} (${job.category})`, 'info');
+                });
+            });
+            
+            // Reset filter
+            currentFilters.category = [];
+            applyFilters();
+            log('Filter reset - showing all jobs', 'success');
+        }
+
+        function applyFilters() {
+            log(`Applying filters: ${JSON.stringify(currentFilters)}`, 'info');
+            
+            filteredJobs = testJobs.filter(job => {
+                if (currentFilters.category.length > 0) {
+                    if (!currentFilters.category.includes(job.category)) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+            
+            displayJobs();
+            log(`Filtered to ${filteredJobs.length} jobs`, 'success');
+        }
+
+        function displayJobs() {
+            const container = document.getElementById('jobs-container');
+            const countElement = document.getElementById('job-count');
+            
+            countElement.textContent = filteredJobs.length;
+            
+            if (filteredJobs.length === 0) {
+                container.innerHTML = '<p>No jobs found</p>';
+                return;
+            }
+            
+            container.innerHTML = filteredJobs.map(job => `
+                <div style="border: 1px solid #ddd; padding: 10px; margin: 5px; border-radius: 4px;">
+                    <h4>${job.title}</h4>
+                    <p><strong>Category:</strong> ${job.category}</p>
+                    <p>${job.description}</p>
+                </div>
+            `).join('');
+        }
+
+        function browseCategory(category) {
+            log(`browseCategory called: ${category}`, 'info');
+            
+            const categoryMapping = {
+                'Web Development': 'web-development',
+                'Mobile Development': 'mobile-development', 
+                'Graphic Design': 'design',
+                'Content Writing': 'writing',
+                'Digital Marketing': 'marketing',
+                'Video & Animation': 'video-editing',
+                'Data Science': 'data-science'
+            };
+            
+            const filterValue = categoryMapping[category] || category.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '');
+            log(`Mapped to filter value: ${filterValue}`, 'success');
+            
+            sessionStorage.setItem('selectedCategory', filterValue);
+            log(`Stored in sessionStorage: ${sessionStorage.getItem('selectedCategory')}`, 'success');
+            
+            // Apply the filter immediately for testing
+            currentFilters.category = [filterValue];
+            applyFilters();
+            
+            // Update filter tags
+            document.querySelectorAll('.filter-tag').forEach(tag => {
+                tag.classList.remove('active');
+                if (tag.dataset.filter === filterValue) {
+                    tag.classList.add('active');
+                    log(`Activated filter tag: ${tag.textContent}`, 'success');
+                }
+            });
+        }
+
+        // Initialize categories
+        window.addEventListener('load', () => {
+            const categories = [
+                'Web Development',
+                'Mobile Development', 
+                'Graphic Design',
+                'Content Writing',
+                'Digital Marketing',
+                'Video & Animation',
+                'Data Science'
+            ];
+            
+            const container = document.getElementById('categories-container');
+            container.innerHTML = categories.map(category => `
+                <div class="category-card" onclick="browseCategory('${category}')">
+                    <h4>${category}</h4>
+                    <p>Click to test filtering</p>
+                </div>
+            `).join('');
+            
+            // Set up filter tag event listeners
+            document.querySelectorAll('.filter-tag').forEach(tag => {
+                tag.addEventListener('click', (e) => {
+                    document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+                    e.target.classList.add('active');
+                    
+                    const filter = e.target.dataset.filter;
+                    if (filter === 'all') {
+                        currentFilters.category = [];
+                    } else {
+                        currentFilters.category = [filter];
+                    }
+                    applyFilters();
+                    log(`Filter tag clicked: ${filter}`, 'info');
+                });
+            });
+            
+            log('Category filter test page loaded', 'success');
+        });
+    </script>
+</body>
+</html>

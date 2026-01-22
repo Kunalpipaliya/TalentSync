@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Console Errors - TalentSync</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
+    <style>
+        body { padding: 20px; font-family: Arial, sans-serif; }
+        .error-section { margin: 20px 0; padding: 15px; border: 1px solid #dc3545; border-radius: 5px; background: #f8d7da; }
+        .fix-section { margin: 20px 0; padding: 15px; border: 1px solid #28a745; border-radius: 5px; background: #d4edda; }
+        .info-section { margin: 20px 0; padding: 15px; border: 1px solid #007bff; border-radius: 5px; background: #d1ecf1; }
+        .console-output { background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; max-height: 300px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>Console Errors Fix</h1>
+    
+    <div class="error-section">
+        <h2>🚨 Identified Console Errors</h2>
+        <ul>
+            <li><strong>Firebase Index Errors:</strong> Missing composite indexes for Firestore queries</li>
+            <li><strong>Load Proposals Error:</strong> Query requires an index for filtering and ordering</li>
+            <li><strong>Syntax Errors:</strong> Potential unclosed template literals or missing semicolons</li>
+        </ul>
+    </div>
+    
+    <div class="fix-section">
+        <h2>✅ Applied Fixes</h2>
+        <button onclick="applyFixes()" class="btn btn-primary">Apply All Fixes</button>
+        <div id="fix-results"></div>
+    </div>
+    
+    <div class="info-section">
+        <h2>📋 Test Results</h2>
+        <button onclick="runTests()" class="btn btn-info">Run Error Tests</button>
+        <div id="test-results"></div>
+    </div>
+    
+    <div class="info-section">
+        <h2>🔍 Console Monitor</h2>
+        <button onclick="startMonitoring()" class="btn btn-secondary">Start Monitoring</button>
+        <button onclick="clearConsole()" class="btn btn-outline">Clear Console</button>
+        <div id="console-monitor" class="console-output"></div>
+    </div>
+    
+    <!-- Modal Overlay -->
+    <div id="modal-overlay" class="modal-overlay"></div>
+    
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+    <script src="dashboard.js"></script>
+    
+    <script>
+        let consoleMonitoring = false;
+        let originalConsoleError = console.error;
+        let originalConsoleWarn = console.warn;
+        let originalConsoleLog = console.log;
+        
+        function logToMonitor(message, type = 'info') {
+            const monitor = document.getElementById('console-monitor');
+            const logEntry = document.createElement('div');
+            logEntry.style.margin = '2px 0';
+            logEntry.style.padding = '3px';
+            logEntry.style.borderLeft = `3px solid ${type === 'error' ? '#dc3545' : type === 'warn' ? '#ffc107' : '#007bff'}`;
+            logEntry.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong> [${type.toUpperCase()}]: ${message}`;
+            monitor.appendChild(logEntry);
+            monitor.scrollTop = monitor.scrollHeight;
+        }
+        
+        function startMonitoring() {
+            if (consoleMonitoring) return;
+            
+            consoleMonitoring = true;
+            logToMonitor('Console monitoring started', 'info');
+            
+            // Override console methods to capture errors
+            console.error = function(...args) {
+                originalConsoleError.apply(console, args);
+                logToMonitor(args.join(' '), 'error');
+            };
+            
+            console.warn = function(...args) {
+                originalConsoleWarn.apply(console, args);
+                logToMonitor(args.join(' '), 'warn');
+            };
+            
+            console.log = function(...args) {
+                originalConsoleLog.apply(console, args);
+                if (args.some(arg => String(arg).includes('error') || String(arg).includes('Error'))) {
+                    logToMonitor(args.join(' '), 'error');
+                } else {
+                    logToMonitor(args.join(' '), 'info');
+                }
+            };
+        }
+        
+        function clearConsole() {
+            document.getElementById('console-monitor').innerHTML = '';
+        }
+        
+        async function applyFixes() {
+            const results = document.getElementById('fix-results');
+            results.innerHTML = '<div>Applying fixes...</div>';
+            
+            const fixes = [];
+            
+            try {
+                // Fix 1: Update Firebase queries to avoid index requirements
+                if (typeof firebaseService !== 'undefined' && firebaseService.loadJobs) {
+                    // Override loadJobs to use simpler queries
+                    const originalLoadJobs = firebaseService.loadJobs;
+                    firebaseService.loadJobs = async function(filters = {}) {
+                        try {
+                            console.log('Using fixed loadJobs method...');
+                            
+                            // Use simple query without orderBy to avoid index issues
+                            let query = this.db.collection('jobs');
+                            
+                            // Only apply one filter at a time to avoid composite index requirements
+                            if (filters.clientId) {
+                                query = query.where('clientId', '==', filters.clientId);
+                            } else if (filters.category) {
+                                query = query.where('category', '==', filters.category);
+                            } else if (filters.status) {
+                                query = query.where('status', '==', filters.status);
+                            }
+                            
+                            const snapshot = await query.get();
+                            const jobs = [];
+                            
+                            snapshot.forEach(doc => {
+                                const data = doc.data();
+                                jobs.push({
+                                    id: doc.id,
+                                    ...data,
+                                    title: data.title || 'Untitled Job',
+                                    description: data.description || 'No description available',
+                                    category: data.category || 'general',
+                                    status: data.status || 'active',
+                                    postedDate: data.postedDate || new Date().toISOString(),
+                                    proposals: data.proposals || 0,
+                                    location: data.location || 'Remote',
+                                    skills: Array.isArray(data.skills) ? data.skills : [],
+                                    experience: data.experience || 'intermediate',
+                                    duration: data.duration || 'medium',
+                                    budget: data.budget || { type: 'fixed', min: 0, max: 0 }
+                                });
+                            });
+                            
+                            // Sort client-side by date
+                            jobs.sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
+                            
+                            console.log(`Fixed loadJobs: loaded ${jobs.length} jobs`);
+                            return { success: true, data: jobs };
+                            
+                        } catch (error) {
+                            console.error('Fixed loadJobs error:', error);
+                            return { success: false, error: error.message };
+                        }
+                    };
+                    fixes.push('✅ Fixed Firebase loadJobs method to avoid index requirements');
+                }
+                
+                // Fix 2: Update loadProposals method
+                if (typeof firebaseService !== 'undefined' && firebaseService.loadProposals) {
+                    const originalLoadProposals = firebaseService.loadProposals;
+                    firebaseService.loadProposals = async function(filters = {}) {
+                        try {
+                            console.log('Using fixed loadProposals method...');
+                            
+                            let query = this.db.collection('proposals');
+                            
+                            // Apply only one filter to avoid composite index issues
+                            if (filters.freelancerId) {
+                                query = query.where('freelancerId', '==', filters.freelancerId);
+                            } else if (filters.clientId) {
+                                query = query.where('clientId', '==', filters.clientId);
+                            } else if (filters.jobId) {
+                                query = query.where('jobId', '==', filters.jobId);
+                            }
+                            
+                            const snapshot = await query.get();
+                            const proposals = snapshot.docs.map(doc => ({
+                                id: doc.id,
+                                ...doc.data(),
+                                createdAt: doc.data().createdAt?.toDate?.()?.toISOString?.() || new Date().toISOString(),
+                                updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString?.() || new Date().toISOString()
+                            }));
+                            
+                            // Apply additional filters client-side
+                            let filteredProposals = proposals;
+                            if (filters.status && filters.status !== 'all') {
+                                filteredProposals = proposals.filter(p => p.status === filters.status);
+                            }
+                            
+                            // Sort client-side
+                            filteredProposals.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                            
+                            console.log(`Fixed loadProposals: loaded ${filteredProposals.length} proposals`);
+                            return { success: true, data: filteredProposals };
+                            
+                        } catch (error) {
+                            console.error('Fixed loadProposals error:', error);
+                            return { success: false, error: error.message };
+                        }
+                    };
+                    fixes.push('✅ Fixed Firebase loadProposals method to avoid index requirements');
+                }
+                
+                // Fix 3: Add error handling for dashboard methods
+                if (typeof dashboard !== 'undefined') {
+                    // Wrap dashboard methods with error handling
+                    const originalManageJob = dashboard.manageJob;
+                    dashboard.manageJob = async function(jobId) {
+                        try {
+                            console.log('Using error-wrapped manageJob...');
+                            return await originalManageJob.call(this, jobId);
+                        } catch (error) {
+                            console.error('ManageJob error caught and handled:', error);
+                            if (talentSync && talentSync.showToast) {
+                                talentSync.showToast('Error managing job: ' + error.message, 'error');
+                            } else {
+                                alert('Error managing job: ' + error.message);
+                            }
+                        }
+                    };
+                    fixes.push('✅ Added error handling wrapper for dashboard.manageJob');
+                }
+                
+                // Fix 4: Add global error handler
+                window.addEventListener('error', function(event) {
+                    console.error('Global error caught:', event.error);
+                    logToMonitor(`Global error: ${event.error.message}`, 'error');
+                });
+                
+                window.addEventListener('unhandledrejection', function(event) {
+                    console.error('Unhandled promise rejection:', event.reason);
+                    logToMonitor(`Unhandled rejection: ${event.reason}`, 'error');
+                });
+                
+                fixes.push('✅ Added global error handlers');
+                
+                results.innerHTML = `
+                    <div style="color: #28a745;">
+                        <h4>Fixes Applied Successfully:</h4>
+                        ${fixes.map(fix => `<div>${fix}</div>`).join('')}
+                    </div>
+                `;
+                
+            } catch (error) {
+                results.innerHTML = `<div style="color: #dc3545;">Error applying fixes: ${error.message}</div>`;
+            }
+        }
+        
+        async function runTests() {
+            const results = document.getElementById('test-results');
+            results.innerHTML = '<div>Running tests...</div>';
+            
+            const tests = [];
+            
+            try {
+                // Test 1: Check if Firebase is working
+                if (typeof firebaseService !== 'undefined' && firebaseService.db) {
+                    try {
+                        await firebaseService.db.collection('jobs').limit(1).get();
+                        tests.push('✅ Firebase connection working');
+                    } catch (error) {
+                        tests.push(`❌ Firebase connection error: ${error.message}`);
+                    }
+                } else {
+                    tests.push('❌ Firebase service not available');
+                }
+                
+                // Test 2: Check dashboard object
+                if (typeof dashboard !== 'undefined') {
+                    tests.push('✅ Dashboard object available');
+                    
+                    if (typeof dashboard.manageJob === 'function') {
+                        tests.push('✅ dashboard.manageJob function exists');
+                    } else {
+                        tests.push('❌ dashboard.manageJob function missing');
+                    }
+                } else {
+                    tests.push('❌ Dashboard object not available');
+                }
+                
+                // Test 3: Check talentSync object
+                if (typeof talentSync !== 'undefined') {
+                    tests.push('✅ TalentSync object available');
+                    
+                    if (typeof talentSync.showModal === 'function') {
+                        tests.push('✅ talentSync.showModal function exists');
+                    } else {
+                        tests.push('❌ talentSync.showModal function missing');
+                    }
+                } else {
+                    tests.push('❌ TalentSync object not available');
+                }
+                
+                // Test 4: Test job loading without errors
+                if (typeof firebaseService !== 'undefined' && firebaseService.loadJobs) {
+                    try {
+                        const result = await firebaseService.loadJobs({ clientId: 'test-client' });
+                        if (result.success) {
+                            tests.push(`✅ Job loading test passed (${result.data.length} jobs)`);
+                        } else {
+                            tests.push(`❌ Job loading test failed: ${result.error}`);
+                        }
+                    } catch (error) {
+                        tests.push(`❌ Job loading test error: ${error.message}`);
+                    }
+                }
+                
+                results.innerHTML = `
+                    <div>
+                        <h4>Test Results:</h4>
+                        ${tests.map(test => `<div style="margin: 5px 0;">${test}</div>`).join('')}
+                    </div>
+                `;
+                
+            } catch (error) {
+                results.innerHTML = `<div style="color: #dc3545;">Error running tests: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-start monitoring when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                startMonitoring();
+                logToMonitor('Error fix page loaded', 'info');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
